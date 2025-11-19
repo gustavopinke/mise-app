@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MISE - Scanner de Códigos de Barras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <style>
     * {
@@ -13,7 +16,7 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #5FFBF1;
       min-height: 100vh;
       display: flex;
@@ -24,33 +27,32 @@
 
     .container {
       background: white;
-      border-radius: 24px;
+      border-radius: 32px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       max-width: 500px;
       width: 100%;
-      padding: 40px 30px;
+      padding: 50px 40px;
       text-align: center;
     }
 
     .logo-container {
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
 
     .logo {
-      max-width: 200px;
+      max-width: 180px;
       height: auto;
     }
 
     h1 {
       color: #1a1a1a;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 600;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
 
     .input-group {
-      margin-bottom: 20px;
-      position: relative;
+      margin-bottom: 30px;
     }
 
     label {
@@ -58,17 +60,17 @@
       text-align: left;
       font-weight: 600;
       color: #333;
-      margin-bottom: 8px;
-      font-size: 14px;
+      margin-bottom: 12px;
+      font-size: 15px;
     }
 
     input {
       width: 100%;
-      padding: 14px;
-      padding-right: 50px;
+      padding: 18px;
       border: 2px solid #e0e0e0;
-      border-radius: 12px;
+      border-radius: 16px;
       font-size: 20px;
+      font-family: 'Poppins', sans-serif;
       transition: all 0.3s;
       text-align: center;
       letter-spacing: 1px;
@@ -77,170 +79,149 @@
     input:focus {
       outline: none;
       border-color: #5FFBF1;
-      box-shadow: 0 0 0 3px rgba(95, 251, 241, 0.1);
-    }
-
-    .keyboard-icon {
-      position: absolute;
-      right: 15px;
-      top: 42px;
-      font-size: 24px;
-      cursor: pointer;
-      user-select: none;
+      box-shadow: 0 0 0 4px rgba(95, 251, 241, 0.15);
     }
 
     .btn-group {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 12px;
+      margin-bottom: 30px;
     }
 
     button {
       flex: 1;
-      padding: 14px 20px;
+      padding: 18px 24px;
       border: none;
-      border-radius: 12px;
+      border-radius: 16px;
       font-size: 16px;
       font-weight: 600;
+      font-family: 'Poppins', sans-serif;
       cursor: pointer;
       transition: all 0.3s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .btn-primary {
       background: linear-gradient(135deg, #5FFBF1 0%, #3DD9CF 100%);
       color: #1a1a1a;
+      box-shadow: 0 4px 15px rgba(95, 251, 241, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(95, 251, 241, 0.4);
+      box-shadow: 0 8px 25px rgba(95, 251, 241, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
     }
 
     .btn-camera {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
 
     .btn-camera:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
 
-    .numeric-keyboard {
-      display: none;
-      background: #f5f5f5;
-      border-radius: 16px;
-      padding: 20px;
-      margin: 20px 0;
-      gap: 10px;
-      grid-template-columns: repeat(3, 1fr);
+    .btn-camera:active {
+      transform: translateY(0);
     }
 
-    .numeric-keyboard.show {
-      display: grid;
-    }
-
-    .key {
-      background: white;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
-      padding: 20px;
-      font-size: 24px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
-    }
-
-    .key:hover {
-      background: #5FFBF1;
-      border-color: #5FFBF1;
-      transform: scale(1.05);
-    }
-
-    .key:active {
-      transform: scale(0.95);
-    }
-
-    .key.delete {
-      background: #fee;
-      color: #c33;
-    }
-
-    .key.delete:hover {
-      background: #fcc;
+    .btn-icon {
+      font-size: 20px;
     }
 
     .message {
-      padding: 14px;
-      border-radius: 12px;
+      padding: 16px;
+      border-radius: 16px;
       margin-top: 20px;
       font-size: 14px;
+      font-weight: 500;
       display: none;
     }
 
     .message.show {
       display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .message.error {
       background: #fee;
       color: #c33;
-      border: 1px solid #fcc;
+      border: 2px solid #fcc;
     }
 
     .message.success {
-      background: #efe;
-      color: #3c3;
-      border: 1px solid #cfc;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 2px solid #a5d6a7;
     }
 
     .message.info {
       background: #e3f2fd;
       color: #1976d2;
-      border: 1px solid #bbdefb;
+      border: 2px solid #90caf9;
     }
 
     .produto-info {
-      background: #f9f9f9;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 20px;
+      background: #f8f9fa;
+      border-radius: 20px;
+      padding: 25px;
+      margin-top: 25px;
       text-align: left;
       display: none;
+      border: 2px solid #e9ecef;
     }
 
     .produto-info.show {
       display: block;
+      animation: slideIn 0.4s ease;
     }
 
     .produto-info h3 {
       color: #1a1a1a;
-      margin-bottom: 15px;
-      font-size: 18px;
+      margin-bottom: 18px;
+      font-size: 19px;
+      font-weight: 700;
     }
 
     .produto-info p {
-      margin: 8px 0;
+      margin: 10px 0;
       color: #555;
-      font-size: 14px;
+      font-size: 15px;
+      line-height: 1.6;
     }
 
     .produto-info strong {
       color: #1a1a1a;
+      font-weight: 600;
     }
 
     .badge {
       display: inline-block;
-      padding: 4px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      margin-left: 8px;
+      margin-left: 10px;
     }
 
     .badge.local {
@@ -255,8 +236,8 @@
 
     #scanner-container {
       display: none;
-      margin: 20px 0;
-      border-radius: 12px;
+      margin: 25px 0;
+      border-radius: 20px;
       overflow: hidden;
       position: relative;
       background: #000;
@@ -264,6 +245,7 @@
 
     #scanner-container.show {
       display: block;
+      animation: slideIn 0.3s ease;
     }
 
     #interactive {
@@ -275,7 +257,7 @@
     #interactive video {
       width: 100%;
       height: auto;
-      border-radius: 12px;
+      border-radius: 20px;
       display: block;
     }
 
@@ -295,7 +277,7 @@
       width: 80%;
       height: 200px;
       border: 3px solid #5FFBF1;
-      border-radius: 12px;
+      border-radius: 16px;
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
       pointer-events: none;
       z-index: 10;
@@ -324,15 +306,16 @@
       transform: translateX(-50%);
       color: white;
       background: rgba(0, 0, 0, 0.7);
-      padding: 10px 20px;
-      border-radius: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
       font-size: 14px;
+      font-weight: 500;
       z-index: 11;
     }
 
     .loading {
       display: none;
-      margin: 20px 0;
+      margin: 25px 0;
     }
 
     .loading.show {
@@ -340,11 +323,11 @@
     }
 
     .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #5FFBF1;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #5FFBF1;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       animation: spin 1s linear infinite;
       margin: 0 auto;
     }
@@ -353,50 +336,35 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .loading p {
+      margin-top: 15px;
+      color: #666;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="logo-container">
-      <img src="logo-mise.png" alt="MISE Logo" class="logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
-      <svg id="fallback-logo" class="logo" style="display:none;" viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="30" cy="75" r="15" fill="#1a1a1a"/>
-        <circle cx="70" cy="55" r="15" fill="#1a1a1a"/>
-        <rect x="25" y="100" width="15" height="40" rx="7" fill="#1a1a1a"/>
-        <rect x="65" y="90" width="15" height="50" rx="7" fill="#1a1a1a"/>
-        <text x="100" y="110" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#1a1a1a">mise</text>
-      </svg>
+      <img src="logo-mise.png" alt="MISE Logo" class="logo" onerror="this.style.display='none';">
     </div>
 
     <h1>Scanner de Códigos de Barras</h1>
 
     <div class="input-group">
       <label for="codigo">Código de Barras</label>
-      <input type="tel" id="codigo" placeholder="Digite ou escaneie o código" inputmode="none" readonly />
-      <span class="keyboard-icon" onclick="toggleKeyboard()">⌨️</span>
-    </div>
-
-    <div class="numeric-keyboard" id="keyboard">
-      <div class="key" onclick="addDigit('1')">1</div>
-      <div class="key" onclick="addDigit('2')">2</div>
-      <div class="key" onclick="addDigit('3')">3</div>
-      <div class="key" onclick="addDigit('4')">4</div>
-      <div class="key" onclick="addDigit('5')">5</div>
-      <div class="key" onclick="addDigit('6')">6</div>
-      <div class="key" onclick="addDigit('7')">7</div>
-      <div class="key" onclick="addDigit('8')">8</div>
-      <div class="key" onclick="addDigit('9')">9</div>
-      <div class="key delete" onclick="deleteDigit()">⌫</div>
-      <div class="key" onclick="addDigit('0')">0</div>
-      <div class="key delete" onclick="clearInput()">C</div>
+      <input type="tel" id="codigo" placeholder="Digite ou escaneie o código" pattern="[0-9]*" inputmode="numeric" />
     </div>
 
     <div class="btn-group">
       <button class="btn-primary" onclick="buscarProduto()">
-        🔍 Buscar Produto
+        <span class="btn-icon">🔍</span>
+        Buscar
       </button>
       <button class="btn-camera" onclick="toggleScanner()">
-        📷 Scanner
+        <span class="btn-icon">📷</span>
+        Scanner
       </button>
     </div>
 
@@ -408,7 +376,7 @@
 
     <div class="loading" id="loading">
       <div class="spinner"></div>
-      <p style="margin-top: 10px; color: #666;">Consultando...</p>
+      <p>Consultando...</p>
     </div>
 
     <div class="message" id="message"></div>
@@ -417,31 +385,6 @@
 
   <script>
     let scannerAtivo = false;
-    let keyboardAtivo = false;
-
-    function toggleKeyboard() {
-      keyboardAtivo = !keyboardAtivo;
-      const keyboard = document.getElementById('keyboard');
-      if (keyboardAtivo) {
-        keyboard.classList.add('show');
-      } else {
-        keyboard.classList.remove('show');
-      }
-    }
-
-    function addDigit(digit) {
-      const input = document.getElementById('codigo');
-      input.value += digit;
-    }
-
-    function deleteDigit() {
-      const input = document.getElementById('codigo');
-      input.value = input.value.slice(0, -1);
-    }
-
-    function clearInput() {
-      document.getElementById('codigo').value = '';
-    }
 
     function mostrarMensagem(texto, tipo) {
       const msg = document.getElementById('message');
@@ -481,7 +424,7 @@
           mostrarProduto(data.produto, data.origem, data.salvo);
           
           if (data.origem === 'cosmos' && data.salvo) {
-            mostrarMensagem('Produto encontrado no Cosmos e salvo na base local! ✅', 'success');
+            mostrarMensagem('Produto encontrado no Cosmos e salvo! ✅', 'success');
           } else if (data.origem === 'local') {
             mostrarMensagem('Produto encontrado na base local! ✅', 'success');
           } else {
@@ -502,7 +445,7 @@
       const info = document.getElementById('produto-info');
       const badgeClass = origem === 'local' ? 'local' : 'cosmos';
       const badgeText = origem === 'local' ? '📦 Base Local' : '🌍 Cosmos';
-      const salvoText = salvo ? '<p style="color: #3c3; font-weight: 600;">✅ Salvo na base local</p>' : '';
+      const salvoText = salvo ? '<p style="color: #2e7d32; font-weight: 600;">✅ Salvo na base local</p>' : '';
       
       info.innerHTML = `
         <h3>
@@ -510,10 +453,6 @@
           <span class="badge ${badgeClass}">${badgeText}</span>
         </h3>
         <p><strong>Código:</strong> ${produto.codigo}</p>
-        ${produto.marca ? `<p><strong>Marca:</strong> ${produto.marca}</p>` : ''}
-        ${produto.categoria ? `<p><strong>Categoria:</strong> ${produto.categoria}</p>` : ''}
-        ${produto.preco ? `<p><strong>Preço:</strong> R$ ${produto.preco}</p>` : ''}
-        ${produto.estoque !== undefined ? `<p><strong>Estoque:</strong> ${produto.estoque} unidades</p>` : ''}
         ${salvoText}
       `;
       info.classList.add('show');
@@ -570,7 +509,7 @@
           mostrarMensagem('Erro ao iniciar câmera. Verifique as permissões.', 'error');
           return;
         }
-        console.log("Scanner inicializado com sucesso!");
+        console.log("Scanner inicializado!");
         Quagga.start();
       });
 
@@ -580,7 +519,6 @@
       Quagga.onDetected(function(result) {
         const codigo = result.codeResult.code;
         
-        // Validar código (evitar falsos positivos)
         if (lastResult === codigo) {
           detectionCount++;
         } else {
@@ -588,7 +526,6 @@
           detectionCount = 1;
         }
 
-        // Só aceita depois de 3 detecções do mesmo código
         if (detectionCount >= 3) {
           document.getElementById('codigo').value = codigo;
           
