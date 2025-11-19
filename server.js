@@ -13,15 +13,14 @@ app.use(express.static(path.join(__dirname, "public")));
 
 function lerCSV(filePath) {
   if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, "codigo,nome\n");
-    return { headers: ["codigo", "nome"], produtos: [] };
+    return { headers: [], produtos: [] };
   }
   
   const csv = fs.readFileSync(filePath, "utf8");
   const linhas = csv.split('\n').filter(l => l.trim());
   
   if (linhas.length === 0) {
-    return { headers: ["codigo", "nome"], produtos: [] };
+    return { headers: [], produtos: [] };
   }
   
   const headers = linhas[0].split(',').map(h => h.trim().toLowerCase());
@@ -41,39 +40,42 @@ function lerCSV(filePath) {
   return { headers, produtos };
 }
 
-function salvarNoCSV(filePath, codigo, nome) {
-  const { produtos } = lerCSV(filePath);
-  const existe = produtos.find(p => p.codigo === codigo);
-  
-  if (existe) return false;
-  
-  const nomeLimpo = nome.replace(/,/g, ' ').replace(/"/g, '');
-  const linha = `${codigo},${nomeLimpo}\n`;
-  fs.appendFileSync(filePath, linha);
-  return true;
+function lerJSON(filePath) {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, "[]");
+    return [];
+  }
+  const raw = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(raw);
+}
+
+function salvarJSON(filePath, produtos) {
+  fs.writeFileSync(filePath, JSON.stringify(produtos, null, 2));
 }
 
 app.get("/consulta/:codigo", async (req, res) => {
   try {
     const codigo = req.params.codigo;
     const csvPath = path.join(__dirname, "data", "PARA_BUSCAR_DO_SITE.csv");
+    const jsonPath = path.join(__dirname, "data", "produtos.json");
 
-    if (!fs.existsSync(path.dirname(csvPath))) {
-      fs.mkdirSync(path.dirname(csvPath), { recursive: true });
-    }
+    // 1. BUSCAR NO CSV PRIMEIRO
+    const { produtos: produtosCSV } = lerCSV(csvPath);
+    const produtoCSV = produtosCSV.find(p => {
+      const codigoCSV = p['cod de barra'] || p['codigo'] || p['código'];
+      return codigoCSV === codigo;
+    });
 
-    const { produtos } = lerCSV(csvPath);
-    const produtoLocal = produtos.find(p => p.codigo === codigo);
-
-    if (produtoLocal) {
+    if (produtoCSV) {
       return res.json({
         ok: true,
-        produto: produtoLocal,
+        produto: produtoCSV,
         origem: "local"
       });
     }
 
-    console.log(`Buscando ${codigo} no Cosmos...`);
+    // 2. BUSCAR NO COSMOS
+    console.log(`Código ${codigo} não encontrado no CSV. Buscando no Cosmos...`);
     
     const cosmosResponse = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigo}.json`);
     const cosmosData = await cosmosResponse.json();
@@ -83,7 +85,17 @@ app.get("/consulta/:codigo", async (req, res) => {
       const marca = cosmosData.product.brands || "";
       const nomeCompleto = marca ? `${nome} - ${marca}` : nome;
       
-      const salvou = salvarNoCSV(csvPath, codigo, nomeCompleto);
+      // 3. SALVAR NO produtos.json
+      const produtosJSON = lerJSON(jsonPath);
+      const existe = produtosJSON.find(p => p.codigo === codigo);
+      
+      if (!existe) {
+        produtosJSON.push({
+          codigo: codigo,
+          nome: nomeCompleto
+        });
+        salvarJSON(jsonPath, produtosJSON);
+      }
       
       return res.json({
         ok: true,
@@ -92,7 +104,7 @@ app.get("/consulta/:codigo", async (req, res) => {
           nome: nomeCompleto
         },
         origem: "cosmos",
-        salvo: salvou
+        salvo: !existe
       });
     }
 

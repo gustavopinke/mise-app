@@ -17,13 +17,13 @@
 
     body {
       font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #5FFBF1;
+      background: #66F7CC;
       min-height: 100vh;
       padding: 0;
     }
 
     .header {
-      background: #5FFBF1;
+      background: #66F7CC;
       padding: 30px 20px;
       text-align: center;
     }
@@ -40,8 +40,8 @@
       max-width: 600px;
       width: 100%;
       margin: 0 auto;
-      padding: 40px 30px;
-      min-height: calc(100vh - 140px);
+      padding: 40px 30px 60px;
+      min-height: 400px;
     }
 
     h1 {
@@ -78,8 +78,8 @@
 
     input:focus {
       outline: none;
-      border-color: #5FFBF1;
-      box-shadow: 0 0 0 4px rgba(95, 251, 241, 0.15);
+      border-color: #66F7CC;
+      box-shadow: 0 0 0 4px rgba(102, 247, 204, 0.15);
     }
 
     .btn-group {
@@ -105,14 +105,14 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #5FFBF1 0%, #3DD9CF 100%);
+      background: linear-gradient(135deg, #66F7CC 0%, #3DD9CF 100%);
       color: #1a1a1a;
-      box-shadow: 0 4px 15px rgba(95, 251, 241, 0.3);
+      box-shadow: 0 4px 15px rgba(102, 247, 204, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(95, 251, 241, 0.4);
+      box-shadow: 0 8px 25px rgba(102, 247, 204, 0.4);
     }
 
     .btn-camera {
@@ -289,27 +289,28 @@
       transform: translate(-50%, -50%);
       width: 80%;
       height: 200px;
-      border: 3px solid #5FFBF1;
+      border: 3px solid #66F7CC;
       border-radius: 16px;
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
       pointer-events: none;
       z-index: 10;
     }
 
-    .scanner-overlay::before {
-      content: '';
+    .scanner-line {
       position: absolute;
-      top: 50%;
+      top: 0;
       left: 0;
       right: 0;
       height: 2px;
-      background: #5FFBF1;
+      background: #66F7CC;
+      box-shadow: 0 0 10px #66F7CC;
       animation: scan 2s linear infinite;
     }
 
     @keyframes scan {
-      0%, 100% { top: 0; }
-      50% { top: 100%; }
+      0% { top: 0; }
+      50% { top: calc(100% - 2px); }
+      100% { top: 0; }
     }
 
     .loading {
@@ -324,7 +325,7 @@
 
     .spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #5FFBF1;
+      border-top: 4px solid #66F7CC;
       border-radius: 50%;
       width: 50px;
       height: 50px;
@@ -339,7 +340,7 @@
 
     @media (max-width: 600px) {
       .container {
-        padding: 30px 20px;
+        padding: 30px 20px 50px;
       }
       
       .produto-header {
@@ -383,7 +384,9 @@
 
     <div id="scanner-container">
       <div id="interactive"></div>
-      <div class="scanner-overlay"></div>
+      <div class="scanner-overlay">
+        <div class="scanner-line"></div>
+      </div>
     </div>
 
     <div class="loading" id="loading">
@@ -430,9 +433,9 @@
           mostrarProduto(data.produto, data.origem, data.salvo);
           
           if (data.origem === 'cosmos' && data.salvo) {
-            mostrarMensagem('Produto do Cosmos salvo na base! ✅', 'success');
+            mostrarMensagem('Produto do Cosmos salvo! ✅', 'success');
           } else if (data.origem === 'local') {
-            mostrarMensagem('Produto encontrado na base! ✅', 'success');
+            mostrarMensagem('Produto encontrado! ✅', 'success');
           }
         } else {
           mostrarMensagem(data.mensagem || 'Produto não encontrado', 'error');
@@ -452,17 +455,17 @@
       
       let html = `
         <div class="produto-header">
-          <div class="produto-titulo">${p.nome || 'Produto'}</div>
+          <div class="produto-titulo">${p.produto || p.nome || 'Produto'}</div>
           <span class="badge ${badgeClass}">${badgeText}</span>
         </div>
         <div class="produto-info-grid">
       `;
       
-      // Mostrar TODAS as colunas disponíveis
-      if (p.codigo) {
+      const codigoBarra = p['cod de barra'] || p.codigo;
+      if (codigoBarra) {
         html += `<div class="info-item">
           <span class="info-label">Código:</span>
-          <span class="info-value">${p.codigo}</span>
+          <span class="info-value">${codigoBarra}</span>
         </div>`;
       }
       
@@ -479,11 +482,18 @@
           <span class="info-value">${p.subgrupo}</span>
         </div>`;
       }
+
+      if (p.marca) {
+        html += `<div class="info-item">
+          <span class="info-label">Marca:</span>
+          <span class="info-value">${p.marca}</span>
+        </div>`;
+      }
       
-      if (p.peso) {
+      if (p['peso bruto'] || p.peso) {
         html += `<div class="info-item">
           <span class="info-label">Peso:</span>
-          <span class="info-value">${p.peso}</span>
+          <span class="info-value">${p['peso bruto'] || p.peso}</span>
         </div>`;
       }
       
@@ -497,7 +507,7 @@
       
       if (salvo) {
         html += `<div class="info-item" style="color: #2e7d32; font-weight: 600;">
-          ✅ Salvo na base local
+          ✅ Salvo em produtos.json
         </div>`;
       }
       
@@ -532,7 +542,7 @@
           }
         },
         decoder: {
-          readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader"]
+          readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader", "code_39_reader"]
         }
       }, function(err) {
         if (err) {
