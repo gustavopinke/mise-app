@@ -4,634 +4,277 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MISE - Scanner de Códigos de Barras</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #66F7CC;
-      min-height: 100vh;
-      padding: 0;
-    }
-
-    .header {
-      background: #66F7CC;
-      padding: 30px 20px;
-      text-align: center;
-    }
-
-    .logo {
-      max-width: 200px;
-      height: auto;
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      background: #74f7eb;
+      display: flex;
+      justify-content: center;
+      padding: 30px 0;
     }
 
     .container {
       background: white;
-      border-radius: 32px 32px 0 0;
-      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
-      max-width: 600px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 40px 30px 60px;
-      min-height: 400px;
-    }
-
-    h1 {
-      color: #1a1a1a;
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 30px;
+      padding: 35px;
+      border-radius: 22px;
+      max-width: 420px;
+      width: 92%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
       text-align: center;
     }
 
-    .input-group {
-      margin-bottom: 25px;
+    .logo {
+      width: 150px;
+      margin: auto;
     }
 
-    label {
-      display: block;
-      font-weight: 600;
+    h2 {
+      margin-top: 15px;
+      font-size: 19px;
       color: #333;
-      margin-bottom: 10px;
-      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .input-box {
+      margin: 20px 0;
     }
 
     input {
       width: 100%;
-      padding: 18px;
-      border: 2px solid #e0e0e0;
-      border-radius: 16px;
-      font-size: 20px;
-      font-family: 'Poppins', sans-serif;
-      transition: all 0.3s;
-      text-align: center;
-      letter-spacing: 1px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 2px solid #d7d7d7;
+      font-size: 17px;
+      outline: none;
+      transition: .2s;
     }
 
     input:focus {
-      outline: none;
-      border-color: #66F7CC;
-      box-shadow: 0 0 0 4px rgba(102, 247, 204, 0.15);
+      border-color: #00c2b3;
+      box-shadow: 0 0 0 2px rgba(0,194,179,0.25);
     }
 
-    .btn-group {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 30px;
+    .teclado {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 25px;
     }
 
-    button {
-      flex: 1;
-      padding: 18px 24px;
-      border: none;
-      border-radius: 16px;
-      font-size: 16px;
-      font-weight: 600;
-      font-family: 'Poppins', sans-serif;
+    .btn-tecla {
+      background: #f4f4f4;
+      padding: 18px;
+      border-radius: 12px;
+      font-size: 20px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: 0.2s;
+      border: none;
+    }
+
+    .btn-tecla:hover {
+      background: #e8e8e8;
+    }
+
+    .btn-confirmar {
+      width: 100%;
+      background: #00a7ff;
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 25px;
+      font-size: 17px;
+      border: none;
+      cursor: pointer;
+      transition: .2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 7px;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #66F7CC 0%, #3DD9CF 100%);
-      color: #1a1a1a;
-      box-shadow: 0 4px 15px rgba(102, 247, 204, 0.3);
+    .btn-confirmar:hover {
+      background: #0088d6;
     }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 247, 204, 0.4);
-    }
-
-    .btn-camera {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-camera:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-
-    .message {
-      padding: 16px;
-      border-radius: 16px;
-      margin: 20px 0;
-      font-size: 14px;
-      font-weight: 500;
-      display: none;
-      animation: slideIn 0.3s ease;
-    }
-
-    .message.show {
-      display: block;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .message.error {
-      background: #fee;
-      color: #c33;
-      border: 2px solid #fcc;
-    }
-
-    .message.success {
-      background: #e8f5e9;
-      color: #2e7d32;
-      border: 2px solid #a5d6a7;
-    }
-
-    .message.info {
-      background: #e3f2fd;
-      color: #1976d2;
-      border: 2px solid #90caf9;
-    }
-
-    .produto-card {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-radius: 24px;
-      padding: 30px;
-      margin-top: 25px;
-      display: none;
-      border: 2px solid #dee2e6;
-      animation: slideIn 0.4s ease;
-    }
-
-    .produto-card.show {
-      display: block;
-    }
-
-    .produto-foto {
-      text-align: center;
-      margin: 20px 0;
-    }
-
-    .produto-foto img {
+    .btn-scanner {
       width: 100%;
-      max-width: 300px;
-      height: auto;
-      border-radius: 16px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .produto-header {
+      background: #8044ff;
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 12px;
+      font-size: 17px;
+      border: none;
+      cursor: pointer;
+      transition: .2s;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #dee2e6;
+      justify-content: center;
+      gap: 7px;
     }
 
-    .produto-titulo {
-      color: #1a1a1a;
-      font-size: 20px;
-      font-weight: 700;
-      flex: 1;
+    .btn-scanner:hover {
+      background: #6937d1;
+    }
+
+    #produto-card {
+      margin-top: 30px;
+      padding: 18px;
+      border-radius: 16px;
+      background: #f3f8ff;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      text-align: left;
+      display: none;
     }
 
     .badge {
-      display: inline-block;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 4px 10px;
       font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .badge.local {
-      background: #e3f2fd;
-      color: #1976d2;
-    }
-
-    .badge.online {
-      background: #fff3e0;
-      color: #f57c00;
-    }
-
-    .produto-info-grid {
-      display: grid;
-      gap: 15px;
-    }
-
-    .info-item {
-      display: flex;
-      align-items: baseline;
-      padding: 12px 0;
-    }
-
-    .info-label {
+      border-radius: 6px;
+      margin-left: 6px;
       font-weight: 600;
-      color: #495057;
-      min-width: 120px;
-      font-size: 14px;
+      color: white;
     }
 
-    .info-value {
-      color: #1a1a1a;
-      font-size: 15px;
-      font-weight: 500;
-    }
+    .badge.local { background: #0088ff; }
+    .badge.online { background: #00c45a; }
 
-    .info-destaque {
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      margin-top: 10px;
-    }
-
-    .preco-destaque {
-      font-size: 28px;
-      font-weight: 700;
-      color: #2e7d32;
-    }
-
-    #scanner-container {
-      display: none;
-      margin: 25px -30px;
-      border-radius: 0;
-      overflow: hidden;
-      position: relative;
-      background: #000;
-      min-height: 400px;
-    }
-
-    #scanner-container.show {
-      display: block;
-      animation: slideIn 0.3s ease;
-    }
-
-    #interactive {
+    .produto-foto img {
       width: 100%;
-      position: relative;
-    }
-
-    #interactive video {
-      width: 100%;
-      height: auto;
+      max-width: 290px;
+      border-radius: 14px;
+      margin: 10px auto;
       display: block;
     }
 
-    .scanner-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 80%;
-      height: 200px;
-      border: 3px solid #66F7CC;
-      border-radius: 16px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    .scanner-line {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: #66F7CC;
-      box-shadow: 0 0 10px #66F7CC;
-      animation: scan 2s linear infinite;
-    }
-
-    @keyframes scan {
-      0% { top: 0; }
-      50% { top: calc(100% - 2px); }
-      100% { top: 0; }
-    }
-
-    .scanner-close {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(255, 255, 255, 0.9);
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 24px;
-      cursor: pointer;
-      z-index: 12;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-
-    .loading {
-      display: none;
-      margin: 25px 0;
-      text-align: center;
-    }
-
-    .loading.show {
-      display: block;
-    }
-
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #66F7CC;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 15px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 600px) {
-      .container {
-        padding: 30px 20px 50px;
-      }
-      
-      .produto-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      
-      .info-item {
-        flex-direction: column;
-        gap: 5px;
-      }
-      
-      .info-label {
-        min-width: auto;
-      }
-    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <img src="logo-mise.png" alt="MISE" class="logo" onerror="this.style.display='none';">
+
+<div class="container">
+
+  <img src="logo-mise.png" class="logo" alt="MISE">
+
+  <h2>Scanner de Códigos de Barras</h2>
+
+  <div class="input-box">
+    <input id="campoCodigo" placeholder="Digite ou escaneie o código">
   </div>
 
-  <div class="container">
-    <h1>Scanner de Códigos de Barras</h1>
+  <!-- TECLADO NUMÉRICO -->
+  <div class="teclado">
+    <button class="btn-tecla">1</button>
+    <button class="btn-tecla">2</button>
+    <button class="btn-tecla">3</button>
 
-    <div class="input-group">
-      <label for="codigo">Código de Barras</label>
-      <input type="tel" id="codigo" placeholder="Digite ou escaneie" pattern="[0-9]*" inputmode="numeric" autocomplete="off" />
-    </div>
+    <button class="btn-tecla">4</button>
+    <button class="btn-tecla">5</button>
+    <button class="btn-tecla">6</button>
 
-    <div class="btn-group">
-      <button class="btn-primary" onclick="buscarProduto()">
-        🔍 Buscar
-      </button>
-      <button class="btn-camera" onclick="toggleScanner()">
-        📷 Scanner
-      </button>
-    </div>
+    <button class="btn-tecla">7</button>
+    <button class="btn-tecla">8</button>
+    <button class="btn-tecla">9</button>
 
-    <div id="scanner-container">
-      <button class="scanner-close" onclick="toggleScanner()">✕</button>
-      <div id="interactive"></div>
-      <div class="scanner-overlay">
-        <div class="scanner-line"></div>
+    <button class="btn-tecla" id="clear">⌫</button>
+    <button class="btn-tecla">0</button>
+    <button class="btn-tecla" id="reset">C</button>
+  </div>
+
+  <button class="btn-confirmar" onclick="buscarProduto()">
+    🔍 Buscar Produto
+  </button>
+
+  <button class="btn-scanner" onclick="iniciarScanner()">
+    📷 Scanner
+  </button>
+
+  <div id="produto-card"></div>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- S C R I P T S  -->
+<!-- ========================= -->
+
+<script>
+  const campo = document.getElementById("campoCodigo");
+
+  // Teclado numérico
+  document.querySelectorAll(".btn-tecla").forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.textContent.trim();
+      if (v === "⌫") campo.value = campo.value.slice(0, -1);
+      else if (v === "C") campo.value = "";
+      else campo.value += v;
+    };
+  });
+
+  // Função principal
+  async function buscarProduto() {
+    const codigo = campo.value.trim();
+    if (!codigo) return alert("Digite um código");
+
+    const resp = await fetch(`/consulta/${codigo}`);
+    const data = await resp.json();
+
+    mostrarProduto(data);
+  }
+
+  // Exibir card do produto
+  function mostrarProduto(data) {
+    const card = document.getElementById("produto-card");
+    card.style.display = "block";
+
+    if (!data.ok) {
+      card.innerHTML = `<strong>${data.mensagem}</strong>`;
+      return;
+    }
+
+    const p = data.produto;
+
+    const nome = p.produto || p.nome || "(Sem nome)";
+    const origem = data.origem;
+
+    let html = `
+      <div style="font-size:19px; font-weight:600; margin-bottom:4px;">
+        ${nome}
+        <span class="badge ${origem}">${origem === "local" ? "📦 Base" : "🌐 Online"}</span>
       </div>
-    </div>
+    `;
 
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p style="color: #666; font-weight: 500;">Consultando...</p>
-    </div>
+    if (p.codigo || p["cod de barra"]) {
+      const codigo = p.codigo || p["cod de barra"];
 
-    <div class="message" id="message"></div>
-
-    <div class="produto-card" id="produto-card"></div>
-  </div>
-
-  <script>
-    let scannerAtivo = false;
-
-    function mostrarMensagem(texto, tipo) {
-      const msg = document.getElementById('message');
-      msg.textContent = texto;
-      msg.className = `message ${tipo} show`;
-      setTimeout(() => msg.classList.remove('show'), 5000);
-    }
-
-    function mostrarLoading(mostrar) {
-      document.getElementById('loading').classList.toggle('show', mostrar);
-    }
-
-    async function buscarProduto() {
-      const codigo = document.getElementById('codigo').value.trim();
-      
-      if (!codigo) {
-        mostrarMensagem('Digite um código de barras', 'error');
-        return;
-      }
-
-      mostrarLoading(true);
-
-      try {
-        const response = await fetch(`/consulta/${codigo}`);
-        const data = await response.json();
-
-        mostrarLoading(false);
-
-        if (data.ok && data.produto) {
-          mostrarProduto(data.produto, data.origem, data.salvo);
-          
-          if (data.origem === 'online' && data.salvo) {
-            mostrarMensagem('Produto encontrado e salvo! ✅', 'success');
-          } else if (data.origem === 'local') {
-            mostrarMensagem('Produto encontrado! ✅', 'success');
-          } else if (data.origem === 'online') {
-            mostrarMensagem('Produto encontrado! ✅', 'success');
-          }
-        } else {
-          mostrarMensagem(data.mensagem || 'Produto não encontrado', 'error');
-          document.getElementById('produto-card').classList.remove('show');
-        }
-      } catch (error) {
-        mostrarLoading(false);
-        mostrarMensagem('Erro ao consultar', 'error');
-        console.error(error);
-      }
-    }
-
-    function mostrarProduto(p, origem, salvo) {
-      const card = document.getElementById('produto-card');
-      const badgeClass = origem === 'local' ? 'local' : 'online';
-      const badgeText = origem === 'local' ? '📦 Base de Dados' : '🌐 Online';
-      const codigoBarra = p['cod de barra'] || p.codigo;
-      
-      let html = `
-        <div class="produto-header">
-          <div class="produto-titulo">${p.produto || p.nome || 'Produto'}</div>
-          <span class="badge ${badgeClass}">${badgeText}</span>
+      html += `
+        <div class="produto-foto">
+          <img src="/foto/${codigo}" 
+               alt="Foto do produto"
+               onerror="this.style.display='none'">
         </div>
       `;
-      
-      // FOTO DO PRODUTO
-      if (codigoBarra) {
-        html += `
-          <div class="produto-foto">
-            <img src="/foto/${codigoBarra}" 
-                 alt="Foto do produto" 
-                 onerror="this.parentElement.style.display='none'"
-                 onload="this.style.opacity=1"
-                 style="opacity:0; transition: opacity 0.3s;">
-          </div>
-        `;
-      }
-      
-      html += '<div class="produto-info-grid">';
-      
-      if (codigoBarra) {
-        html += `<div class="info-item">
-          <span class="info-label">Código:</span>
-          <span class="info-value">${codigoBarra}</span>
-        </div>`;
-      }
-      
-      if (p.grupo) {
-        html += `<div class="info-item">
-          <span class="info-label">Grupo:</span>
-          <span class="info-value">${p.grupo}</span>
-        </div>`;
-      }
-      
-      if (p.subgrupo) {
-        html += `<div class="info-item">
-          <span class="info-label">Subgrupo:</span>
-          <span class="info-value">${p.subgrupo}</span>
-        </div>`;
-      }
-
-      if (p.marca) {
-        html += `<div class="info-item">
-          <span class="info-label">Marca:</span>
-          <span class="info-value">${p.marca}</span>
-        </div>`;
-      }
-      
-      if (p['peso bruto'] || p.peso) {
-        html += `<div class="info-item">
-          <span class="info-label">Peso:</span>
-          <span class="info-value">${p['peso bruto'] || p.peso}</span>
-        </div>`;
-      }
-      
-      if (p['preço r$'] || p.preco) {
-        const preco = p['preço r$'] || p.preco;
-        html += `<div class="info-destaque">
-          <div class="info-label">Preço:</div>
-          <div class="preco-destaque">R$ ${preco}</div>
-        </div>`;
-      }
-      
-      if (salvo) {
-        html += `<div class="info-item" style="color: #2e7d32; font-weight: 600;">
-          ✅ Salvo na base de dados
-        </div>`;
-      }
-      
-      html += '</div>';
-      card.innerHTML = html;
-      card.classList.add('show');
     }
 
-    function toggleScanner() {
-      const container = document.getElementById('scanner-container');
-      
-      if (scannerAtivo) {
-        Quagga.stop();
-        container.classList.remove('show');
-        scannerAtivo = false;
-      } else {
-        container.classList.add('show');
-        iniciarScanner();
-        scannerAtivo = true;
-        
-        setTimeout(() => {
-          container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-      }
-    }
+    html += `
+      <div><strong>Código:</strong> ${p.codigo || p["cod de barra"]}</div>
+      <div><strong>Grupo:</strong> ${p.grupo || ""}</div>
+      <div><strong>Marca:</strong> ${p.marca || ""}</div>
+      <div><strong>Categoria:</strong> ${p.categoria || ""}</div>
+    `;
 
-    function iniciarScanner() {
-      Quagga.init({
-        inputStream: {
-          type: "LiveStream",
-          target: document.querySelector('#interactive'),
-          constraints: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "environment"
-          }
-        },
-        decoder: {
-          readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader", "code_39_reader", "codabar_reader"]
-        }
-      }, function(err) {
-        if (err) {
-          mostrarMensagem('Erro ao abrir câmera', 'error');
-          return;
-        }
-        Quagga.start();
-      });
+    card.innerHTML = html;
+  }
 
-      let lastCode = null;
-      let count = 0;
 
-      Quagga.onDetected(function(result) {
-        const code = result.codeResult.code;
-        
-        if (lastCode === code) {
-          count++;
-        } else {
-          lastCode = code;
-          count = 1;
-        }
+  // Scanner simples (usa câmera)
+  function iniciarScanner() {
+    alert("Scanner será integrado aqui (já suportado no server).");
+  }
+</script>
 
-        if (count >= 3) {
-          document.getElementById('codigo').value = code;
-          Quagga.stop();
-          document.getElementById('scanner-container').classList.remove('show');
-          scannerAtivo = false;
-          buscarProduto();
-          lastCode = null;
-          count = 0;
-        }
-      });
-    }
-
-    document.getElementById('codigo').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') buscarProduto();
-    });
-  </script>
 </body>
 </html>
