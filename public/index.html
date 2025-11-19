@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MISE - Scanner de Códigos de Barras</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #5FFBF1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px 30px;
+      text-align: center;
+    }
+
+    .logo-container {
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      max-width: 200px;
+      height: auto;
+    }
+
+    h1 {
+      color: #1a1a1a;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 30px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    label {
+      display: block;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      padding-right: 50px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 20px;
+      transition: all 0.3s;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #5FFBF1;
+      box-shadow: 0 0 0 3px rgba(95, 251, 241, 0.1);
+    }
+
+    .keyboard-icon {
+      position: absolute;
+      right: 15px;
+      top: 42px;
+      font-size: 24px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #5FFBF1 0%, #3DD9CF 100%);
+      color: #1a1a1a;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(95, 251, 241, 0.4);
+    }
+
+    .btn-camera {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-camera:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .numeric-keyboard {
+      display: none;
+      background: #f5f5f5;
+      border-radius: 16px;
+      padding: 20px;
+      margin: 20px 0;
+      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .numeric-keyboard.show {
+      display: grid;
+    }
+
+    .key {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .key:hover {
+      background: #5FFBF1;
+      border-color: #5FFBF1;
+      transform: scale(1.05);
+    }
+
+    .key:active {
+      transform: scale(0.95);
+    }
+
+    .key.delete {
+      background: #fee;
+      color: #c33;
+    }
+
+    .key.delete:hover {
+      background: #fcc;
+    }
+
+    .message {
+      padding: 14px;
+      border-radius: 12px;
+      margin-top: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.error {
+      background: #fee;
+      color: #c33;
+      border: 1px solid #fcc;
+    }
+
+    .message.success {
+      background: #efe;
+      color: #3c3;
+      border: 1px solid #cfc;
+    }
+
+    .message.info {
+      background: #e3f2fd;
+      color: #1976d2;
+      border: 1px solid #bbdefb;
+    }
+
+    .produto-info {
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      text-align: left;
+      display: none;
+    }
+
+    .produto-info.show {
+      display: block;
+    }
+
+    .produto-info h3 {
+      color: #1a1a1a;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .produto-info p {
+      margin: 8px 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .produto-info strong {
+      color: #1a1a1a;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .badge.local {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .badge.cosmos {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    #scanner-container {
+      display: none;
+      margin: 20px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+    }
+
+    #scanner-container.show {
+      display: block;
+    }
+
+    #interactive {
+      width: 100%;
+      max-width: 100%;
+      position: relative;
+    }
+
+    #interactive video {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      display: block;
+    }
+
+    #interactive canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 200px;
+      border: 3px solid #5FFBF1;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .scanner-overlay::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #5FFBF1;
+      animation: scan 2s linear infinite;
+    }
+
+    @keyframes scan {
+      0%, 100% { top: 0; }
+      50% { top: 100%; }
+    }
+
+    .scanner-instructions {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 11;
+    }
+
+    .loading {
+      display: none;
+      margin: 20px 0;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #5FFBF1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="logo-mise.png" alt="MISE Logo" class="logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
+      <svg id="fallback-logo" class="logo" style="display:none;" viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="75" r="15" fill="#1a1a1a"/>
+        <circle cx="70" cy="55" r="15" fill="#1a1a1a"/>
+        <rect x="25" y="100" width="15" height="40" rx="7" fill="#1a1a1a"/>
+        <rect x="65" y="90" width="15" height="50" rx="7" fill="#1a1a1a"/>
+        <text x="100" y="110" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#1a1a1a">mise</text>
+      </svg>
+    </div>
+
+    <h1>Scanner de Códigos de Barras</h1>
+
+    <div class="input-group">
+      <label for="codigo">Código de Barras</label>
+      <input type="tel" id="codigo" placeholder="Digite ou escaneie o código" inputmode="none" readonly />
+      <span class="keyboard-icon" onclick="toggleKeyboard()">⌨️</span>
+    </div>
+
+    <div class="numeric-keyboard" id="keyboard">
+      <div class="key" onclick="addDigit('1')">1</div>
+      <div class="key" onclick="addDigit('2')">2</div>
+      <div class="key" onclick="addDigit('3')">3</div>
+      <div class="key" onclick="addDigit('4')">4</div>
+      <div class="key" onclick="addDigit('5')">5</div>
+      <div class="key" onclick="addDigit('6')">6</div>
+      <div class="key" onclick="addDigit('7')">7</div>
+      <div class="key" onclick="addDigit('8')">8</div>
+      <div class="key" onclick="addDigit('9')">9</div>
+      <div class="key delete" onclick="deleteDigit()">⌫</div>
+      <div class="key" onclick="addDigit('0')">0</div>
+      <div class="key delete" onclick="clearInput()">C</div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-primary" onclick="buscarProduto()">
+        🔍 Buscar Produto
+      </button>
+      <button class="btn-camera" onclick="toggleScanner()">
+        📷 Scanner
+      </button>
+    </div>
+
+    <div id="scanner-container">
+      <div id="interactive" class="viewport"></div>
+      <div class="scanner-overlay"></div>
+      <div class="scanner-instructions">Posicione o código de barras na área marcada</div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px; color: #666;">Consultando...</p>
+    </div>
+
+    <div class="message" id="message"></div>
+    <div class="produto-info" id="produto-info"></div>
+  </div>
+
+  <script>
+    let scannerAtivo = false;
+    let keyboardAtivo = false;
+
+    function toggleKeyboard() {
+      keyboardAtivo = !keyboardAtivo;
+      const keyboard = document.getElementById('keyboard');
+      if (keyboardAtivo) {
+        keyboard.classList.add('show');
+      } else {
+        keyboard.classList.remove('show');
+      }
+    }
+
+    function addDigit(digit) {
+      const input = document.getElementById('codigo');
+      input.value += digit;
+    }
+
+    function deleteDigit() {
+      const input = document.getElementById('codigo');
+      input.value = input.value.slice(0, -1);
+    }
+
+    function clearInput() {
+      document.getElementById('codigo').value = '';
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      const msg = document.getElementById('message');
+      msg.textContent = texto;
+      msg.className = `message ${tipo} show`;
+      setTimeout(() => {
+        msg.classList.remove('show');
+      }, 5000);
+    }
+
+    function mostrarLoading(mostrar) {
+      const loading = document.getElementById('loading');
+      if (mostrar) {
+        loading.classList.add('show');
+      } else {
+        loading.classList.remove('show');
+      }
+    }
+
+    async function buscarProduto() {
+      const codigo = document.getElementById('codigo').value.trim();
+      
+      if (!codigo) {
+        mostrarMensagem('Por favor, digite um código de barras', 'error');
+        return;
+      }
+
+      mostrarLoading(true);
+
+      try {
+        const response = await fetch(`/consulta/${codigo}`);
+        const data = await response.json();
+
+        mostrarLoading(false);
+
+        if (data.ok && data.produto) {
+          mostrarProduto(data.produto, data.origem, data.salvo);
+          
+          if (data.origem === 'cosmos' && data.salvo) {
+            mostrarMensagem('Produto encontrado no Cosmos e salvo na base local! ✅', 'success');
+          } else if (data.origem === 'local') {
+            mostrarMensagem('Produto encontrado na base local! ✅', 'success');
+          } else {
+            mostrarMensagem('Produto encontrado! ✅', 'success');
+          }
+        } else {
+          mostrarMensagem(data.mensagem || 'Produto não encontrado 😞', 'error');
+          document.getElementById('produto-info').classList.remove('show');
+        }
+      } catch (error) {
+        mostrarLoading(false);
+        mostrarMensagem('Erro ao consultar base de dados', 'error');
+        console.error(error);
+      }
+    }
+
+    function mostrarProduto(produto, origem, salvo) {
+      const info = document.getElementById('produto-info');
+      const badgeClass = origem === 'local' ? 'local' : 'cosmos';
+      const badgeText = origem === 'local' ? '📦 Base Local' : '🌍 Cosmos';
+      const salvoText = salvo ? '<p style="color: #3c3; font-weight: 600;">✅ Salvo na base local</p>' : '';
+      
+      info.innerHTML = `
+        <h3>
+          ${produto.nome || 'Produto'}
+          <span class="badge ${badgeClass}">${badgeText}</span>
+        </h3>
+        <p><strong>Código:</strong> ${produto.codigo}</p>
+        ${produto.marca ? `<p><strong>Marca:</strong> ${produto.marca}</p>` : ''}
+        ${produto.categoria ? `<p><strong>Categoria:</strong> ${produto.categoria}</p>` : ''}
+        ${produto.preco ? `<p><strong>Preço:</strong> R$ ${produto.preco}</p>` : ''}
+        ${produto.estoque !== undefined ? `<p><strong>Estoque:</strong> ${produto.estoque} unidades</p>` : ''}
+        ${salvoText}
+      `;
+      info.classList.add('show');
+    }
+
+    function toggleScanner() {
+      const container = document.getElementById('scanner-container');
+      
+      if (scannerAtivo) {
+        Quagga.stop();
+        container.classList.remove('show');
+        scannerAtivo = false;
+      } else {
+        container.classList.add('show');
+        iniciarScanner();
+        scannerAtivo = true;
+      }
+    }
+
+    function iniciarScanner() {
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#interactive'),
+          constraints: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "environment",
+            aspectRatio: { ideal: 16/9 }
+          },
+        },
+        locator: {
+          patchSize: "medium",
+          halfSample: true
+        },
+        numOfWorkers: 4,
+        decoder: {
+          readers: [
+            "ean_reader",
+            "ean_8_reader",
+            "code_128_reader",
+            "code_39_reader",
+            "upc_reader",
+            "upc_e_reader",
+            "codabar_reader"
+          ],
+          multiple: false
+        },
+        locate: true
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          mostrarMensagem('Erro ao iniciar câmera. Verifique as permissões.', 'error');
+          return;
+        }
+        console.log("Scanner inicializado com sucesso!");
+        Quagga.start();
+      });
+
+      let lastResult = null;
+      let detectionCount = 0;
+
+      Quagga.onDetected(function(result) {
+        const codigo = result.codeResult.code;
+        
+        // Validar código (evitar falsos positivos)
+        if (lastResult === codigo) {
+          detectionCount++;
+        } else {
+          lastResult = codigo;
+          detectionCount = 1;
+        }
+
+        // Só aceita depois de 3 detecções do mesmo código
+        if (detectionCount >= 3) {
+          document.getElementById('codigo').value = codigo;
+          
+          Quagga.stop();
+          document.getElementById('scanner-container').classList.remove('show');
+          scannerAtivo = false;
+          
+          mostrarMensagem('Código detectado: ' + codigo, 'info');
+          buscarProduto();
+          
+          lastResult = null;
+          detectionCount = 0;
+        }
+      });
+    }
+
+    document.getElementById('codigo').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        buscarProduto();
+      }
+    });
+  </script>
+</body>
+</html>
