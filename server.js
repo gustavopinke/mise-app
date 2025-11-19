@@ -14,26 +14,35 @@ app.use(express.static(path.join(__dirname, "public")));
 function lerCSV(filePath) {
   if (!fs.existsSync(filePath)) {
     fs.writeFileSync(filePath, "codigo,nome\n");
-    return [];
+    return { headers: ["codigo", "nome"], produtos: [] };
   }
+  
   const csv = fs.readFileSync(filePath, "utf8");
   const linhas = csv.split('\n').filter(l => l.trim());
+  
+  if (linhas.length === 0) {
+    return { headers: ["codigo", "nome"], produtos: [] };
+  }
+  
+  const headers = linhas[0].split(',').map(h => h.trim().toLowerCase());
   const produtos = [];
   
   for (let i = 1; i < linhas.length; i++) {
-    const partes = linhas[i].split(',');
-    if (partes.length >= 2) {
-      produtos.push({ 
-        codigo: partes[0].trim(), 
-        nome: partes.slice(1).join(',').trim() 
+    const valores = linhas[i].split(',');
+    if (valores.length >= 2) {
+      const produto = {};
+      headers.forEach((header, idx) => {
+        produto[header] = valores[idx] ? valores[idx].trim() : "";
       });
+      produtos.push(produto);
     }
   }
-  return produtos;
+  
+  return { headers, produtos };
 }
 
 function salvarNoCSV(filePath, codigo, nome) {
-  const produtos = lerCSV(filePath);
+  const { produtos } = lerCSV(filePath);
   const existe = produtos.find(p => p.codigo === codigo);
   
   if (existe) return false;
@@ -53,16 +62,13 @@ app.get("/consulta/:codigo", async (req, res) => {
       fs.mkdirSync(path.dirname(csvPath), { recursive: true });
     }
 
-    const produtos = lerCSV(csvPath);
+    const { produtos } = lerCSV(csvPath);
     const produtoLocal = produtos.find(p => p.codigo === codigo);
 
     if (produtoLocal) {
       return res.json({
         ok: true,
-        produto: {
-          codigo: produtoLocal.codigo,
-          nome: produtoLocal.nome
-        },
+        produto: produtoLocal,
         origem: "local"
       });
     }
@@ -92,7 +98,7 @@ app.get("/consulta/:codigo", async (req, res) => {
 
     return res.json({ 
       ok: false, 
-      mensagem: "Produto não encontrado no Cosmos" 
+      mensagem: "Produto não encontrado" 
     });
 
   } catch (e) {

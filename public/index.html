@@ -19,48 +19,48 @@
       font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #5FFBF1;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      padding: 0;
+    }
+
+    .header {
+      background: #5FFBF1;
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .logo {
+      max-width: 200px;
+      height: auto;
     }
 
     .container {
       background: white;
-      border-radius: 32px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-      max-width: 500px;
+      border-radius: 32px 32px 0 0;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
       width: 100%;
-      padding: 50px 40px;
-      text-align: center;
-    }
-
-    .logo-container {
-      margin-bottom: 40px;
-    }
-
-    .logo {
-      max-width: 180px;
-      height: auto;
+      margin: 0 auto;
+      padding: 40px 30px;
+      min-height: calc(100vh - 140px);
     }
 
     h1 {
       color: #1a1a1a;
-      font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 40px;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 30px;
+      text-align: center;
     }
 
     .input-group {
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     label {
       display: block;
-      text-align: left;
       font-weight: 600;
       color: #333;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       font-size: 15px;
     }
 
@@ -115,10 +115,6 @@
       box-shadow: 0 8px 25px rgba(95, 251, 241, 0.4);
     }
 
-    .btn-primary:active {
-      transform: translateY(0);
-    }
-
     .btn-camera {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -130,26 +126,18 @@
       box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
 
-    .btn-camera:active {
-      transform: translateY(0);
-    }
-
-    .btn-icon {
-      font-size: 20px;
-    }
-
     .message {
       padding: 16px;
       border-radius: 16px;
-      margin-top: 20px;
+      margin: 20px 0;
       font-size: 14px;
       font-weight: 500;
       display: none;
+      animation: slideIn 0.3s ease;
     }
 
     .message.show {
       display: block;
-      animation: slideIn 0.3s ease;
     }
 
     @keyframes slideIn {
@@ -181,47 +169,44 @@
       border: 2px solid #90caf9;
     }
 
-    .produto-info {
-      background: #f8f9fa;
-      border-radius: 20px;
-      padding: 25px;
+    .produto-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 24px;
+      padding: 30px;
       margin-top: 25px;
-      text-align: left;
       display: none;
-      border: 2px solid #e9ecef;
-    }
-
-    .produto-info.show {
-      display: block;
+      border: 2px solid #dee2e6;
       animation: slideIn 0.4s ease;
     }
 
-    .produto-info h3 {
+    .produto-card.show {
+      display: block;
+    }
+
+    .produto-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .produto-titulo {
       color: #1a1a1a;
-      margin-bottom: 18px;
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 700;
-    }
-
-    .produto-info p {
-      margin: 10px 0;
-      color: #555;
-      font-size: 15px;
-      line-height: 1.6;
-    }
-
-    .produto-info strong {
-      color: #1a1a1a;
-      font-weight: 600;
+      flex: 1;
     }
 
     .badge {
       display: inline-block;
-      padding: 6px 14px;
+      padding: 8px 16px;
       border-radius: 20px;
       font-size: 12px;
-      font-weight: 600;
-      margin-left: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .badge.local {
@@ -232,6 +217,43 @@
     .badge.cosmos {
       background: #fff3e0;
       color: #f57c00;
+    }
+
+    .produto-info-grid {
+      display: grid;
+      gap: 15px;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: baseline;
+      padding: 12px 0;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #495057;
+      min-width: 120px;
+      font-size: 14px;
+    }
+
+    .info-value {
+      color: #1a1a1a;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .info-destaque {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+
+    .preco-destaque {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2e7d32;
     }
 
     #scanner-container {
@@ -250,7 +272,6 @@
 
     #interactive {
       width: 100%;
-      max-width: 100%;
       position: relative;
     }
 
@@ -259,14 +280,6 @@
       height: auto;
       border-radius: 20px;
       display: block;
-    }
-
-    #interactive canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
     }
 
     .scanner-overlay {
@@ -299,23 +312,10 @@
       50% { top: 100%; }
     }
 
-    .scanner-instructions {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 11;
-    }
-
     .loading {
       display: none;
       margin: 25px 0;
+      text-align: center;
     }
 
     .loading.show {
@@ -329,7 +329,7 @@
       width: 50px;
       height: 50px;
       animation: spin 1s linear infinite;
-      margin: 0 auto;
+      margin: 0 auto 15px;
     }
 
     @keyframes spin {
@@ -337,50 +337,63 @@
       100% { transform: rotate(360deg); }
     }
 
-    .loading p {
-      margin-top: 15px;
-      color: #666;
-      font-weight: 500;
+    @media (max-width: 600px) {
+      .container {
+        padding: 30px 20px;
+      }
+      
+      .produto-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .info-item {
+        flex-direction: column;
+        gap: 5px;
+      }
+      
+      .info-label {
+        min-width: auto;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo-container">
-      <img src="logo-mise.png" alt="MISE Logo" class="logo" onerror="this.style.display='none';">
-    </div>
+  <div class="header">
+    <img src="logo-mise.png" alt="MISE" class="logo" onerror="this.style.display='none';">
+  </div>
 
+  <div class="container">
     <h1>Scanner de Códigos de Barras</h1>
 
     <div class="input-group">
       <label for="codigo">Código de Barras</label>
-      <input type="tel" id="codigo" placeholder="Digite ou escaneie o código" pattern="[0-9]*" inputmode="numeric" />
+      <input type="tel" id="codigo" placeholder="Digite ou escaneie" pattern="[0-9]*" inputmode="numeric" />
     </div>
 
     <div class="btn-group">
       <button class="btn-primary" onclick="buscarProduto()">
-        <span class="btn-icon">🔍</span>
-        Buscar
+        🔍 Buscar
       </button>
       <button class="btn-camera" onclick="toggleScanner()">
-        <span class="btn-icon">📷</span>
-        Scanner
+        📷 Scanner
       </button>
     </div>
 
     <div id="scanner-container">
-      <div id="interactive" class="viewport"></div>
+      <div id="interactive"></div>
       <div class="scanner-overlay"></div>
-      <div class="scanner-instructions">Posicione o código de barras na área marcada</div>
     </div>
 
     <div class="loading" id="loading">
       <div class="spinner"></div>
-      <p>Consultando...</p>
+      <p style="color: #666; font-weight: 500;">Consultando...</p>
     </div>
 
     <div class="message" id="message"></div>
-    <div class="produto-info" id="produto-info"></div>
+
+    <div class="produto-card" id="produto-card"></div>
   </div>
 
   <script>
@@ -390,25 +403,18 @@
       const msg = document.getElementById('message');
       msg.textContent = texto;
       msg.className = `message ${tipo} show`;
-      setTimeout(() => {
-        msg.classList.remove('show');
-      }, 5000);
+      setTimeout(() => msg.classList.remove('show'), 5000);
     }
 
     function mostrarLoading(mostrar) {
-      const loading = document.getElementById('loading');
-      if (mostrar) {
-        loading.classList.add('show');
-      } else {
-        loading.classList.remove('show');
-      }
+      document.getElementById('loading').classList.toggle('show', mostrar);
     }
 
     async function buscarProduto() {
       const codigo = document.getElementById('codigo').value.trim();
       
       if (!codigo) {
-        mostrarMensagem('Por favor, digite um código de barras', 'error');
+        mostrarMensagem('Digite um código de barras', 'error');
         return;
       }
 
@@ -424,38 +430,80 @@
           mostrarProduto(data.produto, data.origem, data.salvo);
           
           if (data.origem === 'cosmos' && data.salvo) {
-            mostrarMensagem('Produto encontrado no Cosmos e salvo! ✅', 'success');
+            mostrarMensagem('Produto do Cosmos salvo na base! ✅', 'success');
           } else if (data.origem === 'local') {
-            mostrarMensagem('Produto encontrado na base local! ✅', 'success');
-          } else {
-            mostrarMensagem('Produto encontrado! ✅', 'success');
+            mostrarMensagem('Produto encontrado na base! ✅', 'success');
           }
         } else {
-          mostrarMensagem(data.mensagem || 'Produto não encontrado 😞', 'error');
-          document.getElementById('produto-info').classList.remove('show');
+          mostrarMensagem(data.mensagem || 'Produto não encontrado', 'error');
+          document.getElementById('produto-card').classList.remove('show');
         }
       } catch (error) {
         mostrarLoading(false);
-        mostrarMensagem('Erro ao consultar base de dados', 'error');
+        mostrarMensagem('Erro ao consultar', 'error');
         console.error(error);
       }
     }
 
-    function mostrarProduto(produto, origem, salvo) {
-      const info = document.getElementById('produto-info');
+    function mostrarProduto(p, origem, salvo) {
+      const card = document.getElementById('produto-card');
       const badgeClass = origem === 'local' ? 'local' : 'cosmos';
       const badgeText = origem === 'local' ? '📦 Base Local' : '🌍 Cosmos';
-      const salvoText = salvo ? '<p style="color: #2e7d32; font-weight: 600;">✅ Salvo na base local</p>' : '';
       
-      info.innerHTML = `
-        <h3>
-          ${produto.nome || 'Produto'}
+      let html = `
+        <div class="produto-header">
+          <div class="produto-titulo">${p.nome || 'Produto'}</div>
           <span class="badge ${badgeClass}">${badgeText}</span>
-        </h3>
-        <p><strong>Código:</strong> ${produto.codigo}</p>
-        ${salvoText}
+        </div>
+        <div class="produto-info-grid">
       `;
-      info.classList.add('show');
+      
+      // Mostrar TODAS as colunas disponíveis
+      if (p.codigo) {
+        html += `<div class="info-item">
+          <span class="info-label">Código:</span>
+          <span class="info-value">${p.codigo}</span>
+        </div>`;
+      }
+      
+      if (p.grupo) {
+        html += `<div class="info-item">
+          <span class="info-label">Grupo:</span>
+          <span class="info-value">${p.grupo}</span>
+        </div>`;
+      }
+      
+      if (p.subgrupo) {
+        html += `<div class="info-item">
+          <span class="info-label">Subgrupo:</span>
+          <span class="info-value">${p.subgrupo}</span>
+        </div>`;
+      }
+      
+      if (p.peso) {
+        html += `<div class="info-item">
+          <span class="info-label">Peso:</span>
+          <span class="info-value">${p.peso}</span>
+        </div>`;
+      }
+      
+      if (p['preço r$'] || p.preco) {
+        const preco = p['preço r$'] || p.preco;
+        html += `<div class="info-destaque">
+          <div class="info-label">Preço:</div>
+          <div class="preco-destaque">R$ ${preco}</div>
+        </div>`;
+      }
+      
+      if (salvo) {
+        html += `<div class="info-item" style="color: #2e7d32; font-weight: 600;">
+          ✅ Salvo na base local
+        </div>`;
+      }
+      
+      html += '</div>';
+      card.innerHTML = html;
+      card.classList.add('show');
     }
 
     function toggleScanner() {
@@ -475,77 +523,52 @@
     function iniciarScanner() {
       Quagga.init({
         inputStream: {
-          name: "Live",
           type: "LiveStream",
           target: document.querySelector('#interactive'),
           constraints: {
             width: { ideal: 1280 },
             height: { ideal: 720 },
-            facingMode: "environment",
-            aspectRatio: { ideal: 16/9 }
-          },
+            facingMode: "environment"
+          }
         },
-        locator: {
-          patchSize: "medium",
-          halfSample: true
-        },
-        numOfWorkers: 4,
         decoder: {
-          readers: [
-            "ean_reader",
-            "ean_8_reader",
-            "code_128_reader",
-            "code_39_reader",
-            "upc_reader",
-            "upc_e_reader",
-            "codabar_reader"
-          ],
-          multiple: false
-        },
-        locate: true
+          readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader"]
+        }
       }, function(err) {
         if (err) {
-          console.error(err);
-          mostrarMensagem('Erro ao iniciar câmera. Verifique as permissões.', 'error');
+          mostrarMensagem('Erro ao abrir câmera', 'error');
           return;
         }
-        console.log("Scanner inicializado!");
         Quagga.start();
       });
 
-      let lastResult = null;
-      let detectionCount = 0;
+      let lastCode = null;
+      let count = 0;
 
       Quagga.onDetected(function(result) {
-        const codigo = result.codeResult.code;
+        const code = result.codeResult.code;
         
-        if (lastResult === codigo) {
-          detectionCount++;
+        if (lastCode === code) {
+          count++;
         } else {
-          lastResult = codigo;
-          detectionCount = 1;
+          lastCode = code;
+          count = 1;
         }
 
-        if (detectionCount >= 3) {
-          document.getElementById('codigo').value = codigo;
-          
+        if (count >= 3) {
+          document.getElementById('codigo').value = code;
           Quagga.stop();
           document.getElementById('scanner-container').classList.remove('show');
           scannerAtivo = false;
-          
-          mostrarMensagem('Código detectado: ' + codigo, 'info');
           buscarProduto();
-          
-          lastResult = null;
-          detectionCount = 0;
+          lastCode = null;
+          count = 0;
         }
       });
     }
 
     document.getElementById('codigo').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        buscarProduto();
-      }
+      if (e.key === 'Enter') buscarProduto();
     });
   </script>
 </body>
