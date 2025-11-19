@@ -8,14 +8,19 @@ import XLSX from "xlsx";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Raiz do projeto (funciona local e no Render)
+const projectRoot = __dirname;
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
+
+// Arquivos estáticos (HTML, imagens, etc)
+app.use(express.static(path.join(projectRoot, "public")));
 
 // -------------------------------------------
-// CONVERTE NOTAÇÃO CIENTÍFICA (7.8913E+12 → 7891300000000)
+// NORMALIZA CÓDIGO DE BARRAS (7.8913E+12 → 7891300000000)
 // -------------------------------------------
 function normalizarCodigo(valor) {
   if (!valor) return "";
@@ -30,76 +35,84 @@ function normalizarCodigo(valor) {
 }
 
 // -------------------------------------------
-// LÊ CSV OU XLSX
+// CARREGA BASE LOCAL (CSV ou XLSX)
 // -------------------------------------------
 function carregarBase() {
-  const csvPath = path.join(__dirname, "../data/PARA_BUSCAR_DO_SITE.csv");
-  const xlsxPath = path.join(__dirname, "../data/PARA_BUSCAR_DO_SITE.xlsx");
+  const csvPath = path.join(projectRoot, "data", "PARA_BUSCAR_DO_SITE.csv");
+  const xlsxPath = path.join(projectRoot, "data", "PARA_BUSCAR_DO_SITE.xlsx");
 
   let produtos = [];
 
+  // Prioridade para CSV
   if (fs.existsSync(csvPath)) {
     const conteudo = fs.readFileSync(csvPath, "utf8").split("\n");
-    const cab = conteudo[0].split(",").map(x => x.trim().toLowerCase());
+    const cabecalhos = conteudo[0].split(",").map(h => h.trim().toLowerCase());
 
     for (let i = 1; i < conteudo.length; i++) {
-      const linha = conteudo[i].split(",");
-      if (!linha[0]) continue;
+      const colunas = conteudo[i].split(",");
+      if (!colunas[0]) continue;
 
       let obj = {};
-      cab.forEach((c, idx) => obj[c] = linha[idx]?.trim() ?? "");
-      obj["cod de barra"] = normalizarCodigo(obj["cod de barra"]);
+      cabecalhos.forEach((cab, idx) => {
+        obj[cab] = (colunas[idx] || "").trim();
+      });
+      obj["cod de barra"] = normalizarCodigo(obj["cod de barra"] || obj["codigo de barra"] || obj["gtin"]);
       produtos.push(obj);
     }
     return produtos;
   }
 
+  // Se não tiver CSV, tenta XLSX
   if (fs.existsSync(xlsxPath)) {
-    const wb = XLSX.readFile(xlsxPath);
-    const sh = wb.Sheets[wb.SheetNames[0]];
-    const linhas = XLSX.utils.sheet_to_json(sh);
+    const workbook = XLSX.readFile(xlsxPath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const linhas = XLSX.utils.sheet_to_json(sheet);
 
     linhas.forEach(l => {
       let p = {};
       for (const key in l) {
-        p[key.toLowerCase()] = String(l[key] ?? "").trim();
+        p[key.toString().toLowerCase().trim()] = String(l[key] ?? "").trim();
       }
-      p["cod de barra"] = normalizarCodigo(p["cod de barra"]);
+      p["cod de barra"] = normalizarCodigo(p["cod de barra"] || p["codigo de barra"] || p["gtin"]);
       produtos.push(p);
     });
-
-    return produtos;
   }
 
-  return [];
+  return produtos;
 }
 
 // -------------------------------------------
-// BUSCA ONLINE – COSMOS (SEM APARECER NO FRONT)
+// BUSCA ONLINE – COSMOS (Bluesoft)
 // -------------------------------------------
 async function buscarCosmos(codigo) {
   try {
     const url = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`;
-    const r = await axios.get(url, {
-      headers: { "X-Cosmos-Token": "" } // SUA CHAVE AQUI (pode deixar vazio)
+    const resposta = await axios.get(url, {
+      headers: { "X-Cosmos-Token": "" } // coloque sua chave aqui se tiver
     });
 
-    if (!r.data || !r.data.description) return null;
-    return r.data.description;
-  } catch {
-    return null;
+    if (resposta.data && resposta.data.description) {
+      return resposta.data.description;
+    }
+  } catch (err) {
+    // Silencioso – só retorna null se der erro
   }
+  return null;
 }
 
 // -------------------------------------------
-// SALVAR RESULTADOS ONLINE EM produtos.json
+// SALVA PRODUTOS ENCONTRADOS ONLINE
 // -------------------------------------------
 function salvarProduto(codigo, nome) {
-  const jsonPath = path.join(__dirname, "../data/produtos.json");
+  const jsonPath = path.join(projectRoot, "data", "produtos.json");
   let lista = [];
 
-  if (fs.existsSync(jsonPath)) {
-    lista = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+  try {
+    if (fs.existsSync(jsonPath)) {
+      lista = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+    }
+  } catch (e) {
+    lista = [];
   }
 
   if (!lista.find(x => x.codigo === codigo)) {
@@ -109,64 +122,71 @@ function salvarProduto(codigo, nome) {
 }
 
 // -------------------------------------------
-// ENDPOINT PRINCIPAL
+// ROTA PRINCIPAL DE CONSULTA
 // -------------------------------------------
 app.get("/consulta/:codigo", async (req, res) => {
   const codigo = normalizarCodigo(req.params.codigo);
-  if (!codigo) return res.json({ ok: false, mensagem: "Código inválido" });
+  if (!codigo || codigo.length < 8) {
+    return res.json({ ok: false, mensagem: "Código inválido" });
+  }
 
-  console.log("🔍 Consultando:", codigo);
+  console.log("🔍 Buscando código:", codigo);
 
-  // 1 — BUSCA NA BASE LOCAL
-  const base = carregarBase();
-  const local = base.find(p => p["cod de barra"] === codigo);
+  // 1ª BASE LOCAL (Excel/CSV)
+  const baseLocal = carregarBase();
+  const encontradoLocal = baseLocal.find(p => p["cod de barra"] === codigo);
 
-  if (local) {
+  if (encontradoLocal) {
     return res.json({
       ok: true,
       origem: "local",
-      produto: local
+      produto: encontradoLocal
     });
   }
 
-  // 2 — BUSCA NO JSON SALVO
-  const jsonPath = path.join(__dirname, "../data/produtos.json");
+  // 2ª produtos.json (cache de buscas online anteriores)
+  const jsonPath = path.join(projectRoot, "data", "produtos.json");
   if (fs.existsSync(jsonPath)) {
-    const list = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-    const salvo = list.find(p => p.codigo === codigo);
-    if (salvo) {
+    const cache = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+    const noCache = cache.find(p => p.codigo === codigo);
+    if (noCache) {
       return res.json({
         ok: true,
-        origem: "online-salvo",
-        produto: salvo
+        origem: "cosmos",
+        produto: noCache
       });
     }
   }
 
-  // 3 — BUSCA ONLINE (COSMOS)
+  // 3ª BUSCA ONLINE (Cosmos)
   const nomeOnline = await buscarCosmos(codigo);
-
   if (nomeOnline) {
     salvarProduto(codigo, nomeOnline);
     return res.json({
       ok: true,
-      origem: "online",
+      origem: "cosmos",
       produto: { codigo, nome: nomeOnline }
     });
   }
 
-  return res.json({ ok: false, mensagem: "Produto não encontrado" });
+  // Nada encontrado
+  res.json({ ok: false, mensagem: "Produto não encontrado" });
 });
 
 // -------------------------------------------
-// SPA
+// SPA – sempre entrega o index.html
 // -------------------------------------------
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  res.sendFile(path.join(projectRoot, "public", "index.html"));
 });
 
+// -------------------------------------------
+// INICIA O SERVIDOR
+// -------------------------------------------
 app.listen(PORT, () => {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🚀 MISE Rodando Porta:", PORT);
+  console.log(" MISE Scanner rodando!");
+  console.log(` Porta: ${PORT}`);
+  console.log(` URL: http://localhost:${PORT}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 });
