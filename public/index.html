@@ -183,6 +183,19 @@
       display: block;
     }
 
+    .produto-foto {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .produto-foto img {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
     .produto-header {
       display: flex;
       align-items: center;
@@ -258,11 +271,12 @@
 
     #scanner-container {
       display: none;
-      margin: 25px 0;
-      border-radius: 20px;
+      margin: 25px -30px;
+      border-radius: 0;
       overflow: hidden;
       position: relative;
       background: #000;
+      min-height: 400px;
     }
 
     #scanner-container.show {
@@ -278,7 +292,6 @@
     #interactive video {
       width: 100%;
       height: auto;
-      border-radius: 20px;
       display: block;
     }
 
@@ -311,6 +324,24 @@
       0% { top: 0; }
       50% { top: calc(100% - 2px); }
       100% { top: 0; }
+    }
+
+    .scanner-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
 
     .loading {
@@ -370,7 +401,7 @@
 
     <div class="input-group">
       <label for="codigo">Código de Barras</label>
-      <input type="tel" id="codigo" placeholder="Digite ou escaneie" pattern="[0-9]*" inputmode="numeric" />
+      <input type="tel" id="codigo" placeholder="Digite ou escaneie" pattern="[0-9]*" inputmode="numeric" autocomplete="off" />
     </div>
 
     <div class="btn-group">
@@ -383,6 +414,7 @@
     </div>
 
     <div id="scanner-container">
+      <button class="scanner-close" onclick="toggleScanner()">✕</button>
       <div id="interactive"></div>
       <div class="scanner-overlay">
         <div class="scanner-line"></div>
@@ -454,16 +486,30 @@
       const card = document.getElementById('produto-card');
       const badgeClass = origem === 'local' ? 'local' : 'online';
       const badgeText = origem === 'local' ? '📦 Base de Dados' : '🌐 Online';
+      const codigoBarra = p['cod de barra'] || p.codigo;
       
       let html = `
         <div class="produto-header">
           <div class="produto-titulo">${p.produto || p.nome || 'Produto'}</div>
           <span class="badge ${badgeClass}">${badgeText}</span>
         </div>
-        <div class="produto-info-grid">
       `;
       
-      const codigoBarra = p['cod de barra'] || p.codigo;
+      // FOTO DO PRODUTO
+      if (codigoBarra) {
+        html += `
+          <div class="produto-foto">
+            <img src="/foto/${codigoBarra}" 
+                 alt="Foto do produto" 
+                 onerror="this.parentElement.style.display='none'"
+                 onload="this.style.opacity=1"
+                 style="opacity:0; transition: opacity 0.3s;">
+          </div>
+        `;
+      }
+      
+      html += '<div class="produto-info-grid">';
+      
       if (codigoBarra) {
         html += `<div class="info-item">
           <span class="info-label">Código:</span>
@@ -529,6 +575,10 @@
         container.classList.add('show');
         iniciarScanner();
         scannerAtivo = true;
+        
+        setTimeout(() => {
+          container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
       }
     }
 
