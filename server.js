@@ -1,201 +1,165 @@
-// ===============================
-//  MISE - Servidor Oficial
-//  Versão com CSV STREAMING (não trava, não explode memória)
-// ===============================
-
+// ------------------------------------------------------------
+// MISE - SERVER.JS (VERSÃO ESTÁVEL E FUNCIONAL)
+// ------------------------------------------------------------
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import readline from "readline";
+import xlsx from "xlsx";
+import fetch from "node-fetch";
 
-// Ajustes de caminho
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ------------------------------
-//  CONFIG
-// ------------------------------
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ===============================
-//  FUNÇÕES AUXILIARES
-// ===============================
+// ------------------------------------------------------------
+// 🔥 CONFIGURAÇÃO DE ARQUIVOS
+// ------------------------------------------------------------
+const excelPath = path.join(__dirname, "data", "OK BASE DO APP COLETADO.xlsx");
+const jsonPath = path.join(__dirname, "data", "produtos.json");
 
-// Corrige números em notação científica
-function converterNotacaoCientifica(valor) {
-  if (!valor) return '';
-  const str = String(valor).trim();
+// ------------------------------------------------------------
+// 🔥 LER EXCEL SEM CARREGAR TUDO NA MEMÓRIA
+// ------------------------------------------------------------
+function buscarNoExcel(codigo) {
+  if (!fs.existsSync(excelPath)) return null;
 
-  if (str.includes('E') || str.includes('e')) {
-    const num = parseFloat(str);
-    return num.toFixed(0).replace(/\.0+$/, '');
-  }
-  return str;
-}
+  const workbook = xlsx.readFile(excelPath);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const linhas = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-// ===============================
-//  CSV STREAMING (LEITURA LINHA A LINHA)
-// ===============================
-async function buscarNoCSV(codigoBuscado) {
-  const csvPath = path.join(__dirname, "data", "PARA_BUSCAR_DO_SITE.csv");
-
-  if (!fs.existsSync(csvPath)) return null;
-
-  const stream = fs.createReadStream(csvPath);
-  const rl = readline.createInterface({ input: stream });
-
-  let headers = null;
-
-  for await (const line of rl) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    // Primeira linha → cabeçalhos
-    if (!headers) {
-      headers = trimmed.split(",").map(h => h.trim().toLowerCase());
-      continue;
-    }
-
-    const colunas = trimmed.split(",");
-    const produto = {};
-
-    headers.forEach((h, idx) => {
-      produto[h] = colunas[idx]?.trim() || "";
-    });
-
-    const codigo = converterNotacaoCientifica(
-      produto["cod de barra"] ||
-      produto["codigo"] ||
-      produto["código"]
-    );
-
-    if (codigo === codigoBuscado) {
-      rl.close();
-      stream.close();
-      return produto;
+  for (const linha of linhas) {
+    const cod = String(linha["Cod. de Barra"] || "").replace(/\D/g, "");
+    if (cod === codigo) {
+      return linha["Produto"] || "";
     }
   }
 
   return null;
 }
 
-// ===============================
-//  API ONLINE OPENFOODFACTS
-// ===============================
-async function buscarNaAPI(codigo) {
+// ------------------------------------------------------------
+// 🔥 SALVAR NO EXCEL SEM DUPLICAR
+// ------------------------------------------------------------
+function salvarNoExcel(codigo, nome) {
+  const workbook = xlsx.readFile(excelPath);
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+
+  const linhas = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+  // SE JÁ EXISTE, NÃO ADICIONA
+  if (linhas.some(l => String(l["Cod. de Barra"]) === codigo)) return;
+
+  linhas.push({ "Cod. de Barra": codigo, Produto: nome });
+
+  const novoSheet = xlsx.utils.json_to_sheet(linhas);
+  workbook.Sheets[sheetName] = novoSheet;
+
+  xlsx.writeFile(workbook, excelPath);
+}
+
+// ------------------------------------------------------------
+// 🔥 COSMOS (SEM CHAVE) – IGUAL SEU PYTHON
+// ------------------------------------------------------------
+async function buscarNoCosmos(codigo) {
   try {
-    const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
+    const url = `https://cosmos.bluesoft.com.br/products/${codigo}`;
+    const html = await fetch(url).then(r => r.text());
 
-    const response = await fetch(url, {
-      headers: { "User-Agent": "MISE-App-Search" }
-    });
+    const titulo = html.match(/<title>(.*?)<\/title>/i);
+    if (!titulo) return null;
 
-    const data = await response.json();
+    let nome = titulo[1].replace("- Cosmos", "").trim();
 
-    if (data.status === 1 && data.product) {
-      const nome = data.product.product_name || "";
-      const marca = data.product.brands || "";
-      return marca ? `${nome} - ${marca}` : nome;
-    }
+    if (nome === codigo || nome.length < 3) return null;
 
-    return null;
-  } catch (error) {
-    console.error("Erro API:", error);
+    return nome;
+  } catch {
     return null;
   }
 }
 
-// ===============================
-//  ROTA PARA SERVIR FOTOS
-// ===============================
-app.get("/foto/:codigo", (req, res) => {
-  const codigo = req.params.codigo;
-  const extensoes = ['.jpg', '.jpeg', '.png', '.webp'];
-  const pasta = path.join(__dirname, "public", "fotos");
-
-  if (!fs.existsSync(pasta)) {
-    return res.status(404).json({ erro: "Pasta de fotos inexistente" });
-  }
-
-  // tenta com _www.mise.ws
-  for (const ext of extensoes) {
-    const arquivo = path.join(pasta, `${codigo}_www.mise.ws${ext}`);
-    if (fs.existsSync(arquivo)) return res.sendFile(arquivo);
-  }
-
-  // tenta sem _www.mise.ws
-  for (const ext of extensoes) {
-    const arquivo = path.join(pasta, `${codigo}${ext}`);
-    if (fs.existsSync(arquivo)) return res.sendFile(arquivo);
-  }
-
-  res.status(404).json({ erro: "Foto não encontrada" });
-});
-
-// ===============================
-//  ROTA DE CONSULTA PRINCIPAL
-// ===============================
-app.get("/consulta/:codigo", async (req, res) => {
+// ------------------------------------------------------------
+// 🔥 OPEN FOOD FACTS (fallback)
+// ------------------------------------------------------------
+async function buscarNoOpenFoodFacts(codigo) {
   try {
-    const codigo = req.params.codigo.trim();
-    console.log("📌 Buscando código:", codigo);
+    const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
+    const resp = await fetch(url).then(r => r.json());
 
-    // 1 — tenta achar no CSV (streaming)
-    const produtoCSV = await buscarNoCSV(codigo);
-
-    if (produtoCSV) {
-      console.log("✅ Encontrado no CSV!");
-      return res.json({
-        ok: true,
-        produto: produtoCSV,
-        origem: "local"
-      });
+    if (resp.status === 1) {
+      return resp.product.product_name || null;
     }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
-    // 2 — busca online
-    console.log("🌐 Não encontrado no CSV. Buscando online...");
-    const nome = await buscarNaAPI(codigo);
+// ------------------------------------------------------------
+// 🔥 ROTA DE CONSULTA
+// ------------------------------------------------------------
+app.get("/consulta/:codigo", async (req, res) => {
+  const codigo = req.params.codigo.replace(/\D/g, "");
 
-    if (nome) {
-      return res.json({
-        ok: true,
-        produto: { codigo, nome },
-        origem: "online"
-      });
-    }
+  if (!codigo) {
+    return res.json({ ok: false, mensagem: "Código inválido" });
+  }
 
+  console.log("🔍 Buscando:", codigo);
+
+  // 1) Buscar no Excel
+  const nomeLocal = buscarNoExcel(codigo);
+  if (nomeLocal) {
     return res.json({
-      ok: false,
-      mensagem: "Produto não encontrado"
-    });
-
-  } catch (e) {
-    console.error("ERRO /consulta:", e);
-    return res.json({
-      ok: false,
-      mensagem: "Erro interno"
+      ok: true,
+      origem: "local",
+      produto: { codigo, nome: nomeLocal }
     });
   }
+
+  // 2) Buscar no Cosmos
+  const nomeCosmos = await buscarNoCosmos(codigo);
+  if (nomeCosmos) {
+    salvarNoExcel(codigo, nomeCosmos); // sem duplicar
+    return res.json({
+      ok: true,
+      origem: "cosmos",
+      produto: { codigo, nome: nomeCosmos }
+    });
+  }
+
+  // 3) OpenFoodFacts
+  const nomeOFF = await buscarNoOpenFoodFacts(codigo);
+  if (nomeOFF) {
+    salvarNoExcel(codigo, nomeOFF);
+    return res.json({
+      ok: true,
+      origem: "openfoodfacts",
+      produto: { codigo, nome: nomeOFF }
+    });
+  }
+
+  // 4) Nada encontrado
+  return res.json({ ok: false, mensagem: "Produto não encontrado" });
 });
 
-// ===============================
-//  SERVE FRONTEND
-// ===============================
+// ------------------------------------------------------------
+// 🔥 TELA PRINCIPAL
+// ------------------------------------------------------------
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ===============================
-//  START SERVER
-// ===============================
+// ------------------------------------------------------------
+// 🔥 INICIAR SERVIDOR
+// ------------------------------------------------------------
 app.listen(PORT, () => {
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🚀 MISE RODANDO!");
-  console.log("📡 Porta:", PORT);
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🔥 MISE rodando na porta", PORT);
 });
