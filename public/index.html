@@ -214,7 +214,7 @@
       color: #1976d2;
     }
 
-    .badge.cosmos {
+    .badge.online {
       background: #fff3e0;
       color: #f57c00;
     }
@@ -432,9 +432,11 @@
         if (data.ok && data.produto) {
           mostrarProduto(data.produto, data.origem, data.salvo);
           
-          if (data.origem === 'cosmos' && data.salvo) {
-            mostrarMensagem('Produto do Cosmos salvo! ✅', 'success');
+          if (data.origem === 'online' && data.salvo) {
+            mostrarMensagem('Produto encontrado e salvo! ✅', 'success');
           } else if (data.origem === 'local') {
+            mostrarMensagem('Produto encontrado! ✅', 'success');
+          } else if (data.origem === 'online') {
             mostrarMensagem('Produto encontrado! ✅', 'success');
           }
         } else {
@@ -450,8 +452,8 @@
 
     function mostrarProduto(p, origem, salvo) {
       const card = document.getElementById('produto-card');
-      const badgeClass = origem === 'local' ? 'local' : 'cosmos';
-      const badgeText = origem === 'local' ? '📦 Base Local' : '🌍 Cosmos';
+      const badgeClass = origem === 'local' ? 'local' : 'online';
+      const badgeText = origem === 'local' ? '📦 Base de Dados' : '🌐 Online';
       
       let html = `
         <div class="produto-header">
@@ -507,7 +509,7 @@
       
       if (salvo) {
         html += `<div class="info-item" style="color: #2e7d32; font-weight: 600;">
-          ✅ Salvo em produtos.json
+          ✅ Salvo na base de dados
         </div>`;
       }
       
@@ -542,7 +544,7 @@
           }
         },
         decoder: {
-          readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader", "code_39_reader"]
+          readers: ["ean_reader", "ean_8_reader", "code_128_reader", "upc_reader", "code_39_reader", "codabar_reader"]
         }
       }, function(err) {
         if (err) {
