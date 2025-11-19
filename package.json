@@ -13,15 +13,3 @@
     "node": ">=18.0.0"
   }
 }
-```
-
----
-
-## 📄 **ARQUIVO 3: .gitignore**
-
-Crie um arquivo chamado `.gitignore` (COM PONTO NO INÍCIO) na pasta `mise-app`:
-```
-node_modules/
-.env
-*.log
-.DS_Store
