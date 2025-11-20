@@ -5,6 +5,11 @@ import fs from "fs";
 import axios from "axios";
 import XLSX from "xlsx";
 import * as cheerio from "cheerio";
+import dotenv from "dotenv";
+import { buscarFotoR2, r2Habilitado } from "./r2-helper.js";
+
+// Carregar variáveis de ambiente
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -154,24 +159,18 @@ function carregarBase() {
 }
 
 // -------------------------------------------
-// BUSCA FOTO DO PRODUTO
+// BUSCA FOTO DO PRODUTO (LOCAL)
 // -------------------------------------------
-function buscarFoto(codigo) {
+function buscarFotoLocal(codigo) {
   const fotosDir = path.join(projectRoot, "data", "fotos_produtos");
 
   if (!fs.existsSync(fotosDir)) {
-    console.log("⚠️ Diretório de fotos não existe:", fotosDir);
     return null;
   }
 
   try {
     const arquivos = fs.readdirSync(fotosDir);
-    console.log(`🔍 Buscando foto para código ${codigo}...`);
-    console.log(`📁 Total de arquivos na pasta: ${arquivos.length}`);
-
-    // Normalizar código para garantir comparação correta
     const codigoNormalizado = normalizarCodigo(codigo).toLowerCase();
-    console.log(`🔢 Código normalizado: ${codigoNormalizado}`);
 
     // Procurar arquivo que comece com o código de barras
     const foto = arquivos.find(arquivo => {
@@ -186,25 +185,53 @@ function buscarFoto(codigo) {
       if (!temExtensaoValida) return false;
 
       // Aceitar formatos: codigo.ext ou codigo_*.ext
-      const match = nomeArquivo.startsWith(codigoNormalizado);
-
-      if (match) {
-        console.log(`✅ Foto encontrada: ${arquivo}`);
-      }
-
-      return match;
+      return nomeArquivo.startsWith(codigoNormalizado);
     });
-
-    if (!foto) {
-      console.log(`❌ Nenhuma foto encontrada para código ${codigoNormalizado}`);
-      console.log(`   Primeiros arquivos na pasta: ${arquivos.filter(a => !a.startsWith('.')).slice(0, 10).join(', ')}`);
-    }
 
     return foto || null;
   } catch (err) {
-    console.error("❌ Erro ao buscar foto:", err);
+    console.error("❌ Erro ao buscar foto local:", err);
     return null;
   }
+}
+
+// -------------------------------------------
+// BUSCA FOTO DO PRODUTO (R2 + LOCAL FALLBACK)
+// -------------------------------------------
+async function buscarFoto(codigo) {
+  console.log(`🔍 Buscando foto para código ${codigo}...`);
+
+  // 1. Tentar buscar do R2 (se configurado)
+  if (r2Habilitado()) {
+    console.log("☁️  Tentando buscar foto do R2...");
+    const fotoR2 = await buscarFotoR2(codigo);
+
+    if (fotoR2) {
+      console.log(`✅ Foto encontrada no R2: ${fotoR2.filename}`);
+      return {
+        fonte: 'r2',
+        url: fotoR2.url,
+        filename: fotoR2.filename
+      };
+    }
+    console.log("❌ Foto não encontrada no R2");
+  }
+
+  // 2. Fallback: buscar localmente
+  console.log("📁 Tentando buscar foto localmente...");
+  const fotoLocal = buscarFotoLocal(codigo);
+
+  if (fotoLocal) {
+    console.log(`✅ Foto encontrada localmente: ${fotoLocal}`);
+    return {
+      fonte: 'local',
+      url: `/fotos/${fotoLocal}`,
+      filename: fotoLocal
+    };
+  }
+
+  console.log(`❌ Nenhuma foto encontrada para código ${codigo}`);
+  return null;
 }
 
 // -------------------------------------------
@@ -481,7 +508,7 @@ app.get("/consulta/:codigo", async (req, res) => {
     console.log("✅ Encontrado na base local");
 
     // Buscar foto do produto
-    const foto = buscarFoto(codigo);
+    const foto = await buscarFoto(codigo);
     if (foto) {
       encontradoLocal.foto = foto;
     }
@@ -502,7 +529,7 @@ app.get("/consulta/:codigo", async (req, res) => {
       console.log("✅ Encontrado no cache");
 
       // Buscar foto do produto
-      const foto = buscarFoto(codigo);
+      const foto = await buscarFoto(codigo);
 
       return res.json({
         ok: true,
@@ -525,7 +552,7 @@ app.get("/consulta/:codigo", async (req, res) => {
       salvarProduto(codigo, nomeOnline);
 
       // Buscar foto do produto
-      const foto = buscarFoto(codigo);
+      const foto = await buscarFoto(codigo);
 
       return res.json({
         ok: true,
