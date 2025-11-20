@@ -17,6 +17,7 @@ const PORT = process.env.PORT || 10000;
 
 // Cache em memória otimizado (economizar RAM no Render)
 let cacheBase = null;
+let cacheBaseMap = null; // Índice Map para busca O(1)
 let ultimaAtualizacao = 0;
 const CACHE_TIMEOUT = 300000; // 5 minutos - cache mais longo, menos recargas
 
@@ -50,8 +51,8 @@ function carregarBase() {
   const agora = Date.now();
 
   // Retorna cache se ainda válido
-  if (cacheBase && (agora - ultimaAtualizacao) < CACHE_TIMEOUT) {
-    return cacheBase;
+  if (cacheBase && cacheBaseMap && (agora - ultimaAtualizacao) < CACHE_TIMEOUT) {
+    return { produtos: cacheBase, map: cacheBaseMap };
   }
 
   const csvPath = path.join(projectRoot, "data", "PARA_BUSCAR_DO_SITE.csv");
@@ -61,10 +62,13 @@ function carregarBase() {
 
   // Prioridade para CSV
   if (fs.existsSync(csvPath)) {
+    console.log("📂 Carregando base do CSV...");
     const conteudo = fs.readFileSync(csvPath, "utf8");
     const linhas = conteudo.split("\n").filter(l => l.trim());
 
-    if (linhas.length === 0) return produtos;
+    if (linhas.length === 0) {
+      return { produtos: [], map: new Map() };
+    }
 
     // Detectar delimitador (ponto e vírgula ou vírgula)
     const delimitador = linhas[0].includes(';') ? ';' : ',';
@@ -88,14 +92,27 @@ function carregarBase() {
       }
     }
 
+    // Criar índice Map para busca O(1)
+    const map = new Map();
+    produtos.forEach(produto => {
+      const codigo = produto["cod de barra"];
+      if (codigo) {
+        map.set(codigo, produto);
+      }
+    });
+
     // Atualizar cache
     cacheBase = produtos;
+    cacheBaseMap = map;
     ultimaAtualizacao = agora;
-    return produtos;
+
+    console.log(`✅ Base carregada: ${produtos.length} produtos indexados`);
+    return { produtos, map };
   }
 
   // Se não tiver CSV, tenta XLSX
   if (fs.existsSync(xlsxPath)) {
+    console.log("📂 Carregando base do XLSX...");
     const workbook = XLSX.readFile(xlsxPath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const linhas = XLSX.utils.sheet_to_json(sheet);
@@ -116,12 +133,24 @@ function carregarBase() {
       }
     });
 
+    // Criar índice Map para busca O(1)
+    const map = new Map();
+    produtos.forEach(produto => {
+      const codigo = produto["cod de barra"];
+      if (codigo) {
+        map.set(codigo, produto);
+      }
+    });
+
     // Atualizar cache
     cacheBase = produtos;
+    cacheBaseMap = map;
     ultimaAtualizacao = agora;
+
+    console.log(`✅ Base carregada: ${produtos.length} produtos indexados`);
   }
 
-  return produtos;
+  return { produtos, map: cacheBaseMap || new Map() };
 }
 
 // -------------------------------------------
@@ -392,9 +421,9 @@ app.get("/consulta/:codigo", async (req, res) => {
 
   console.log("🔍 Buscando código:", codigo);
 
-  // 1ª BASE LOCAL (Excel/CSV)
-  const baseLocal = carregarBase();
-  const encontradoLocal = baseLocal.find(p => p["cod de barra"] === codigo);
+  // 1ª BASE LOCAL (Excel/CSV) - Busca otimizada com Map O(1)
+  const { map: baseLocalMap } = carregarBase();
+  const encontradoLocal = baseLocalMap.get(codigo);
 
   if (encontradoLocal) {
     console.log("✅ Encontrado na base local");
@@ -435,29 +464,30 @@ app.get("/consulta/:codigo", async (req, res) => {
     }
   }
 
-  // 3ª BUSCA ONLINE (Cosmos) - DESABILITADA
-  // console.log("🌐 Buscando no Cosmos...");
-  // const nomeOnline = await buscarCosmos(codigo);
-  // if (nomeOnline) {
-  //   console.log("✅ Encontrado no Cosmos:", nomeOnline);
-  //   salvarProduto(codigo, nomeOnline);
+  // 3ª BUSCA ONLINE (Cosmos)
+  console.log("🌐 Buscando no Cosmos...");
+  const nomeOnline = await buscarCosmos(codigo);
+  if (nomeOnline) {
+    console.log("✅ Encontrado no Cosmos:", nomeOnline);
+    salvarProduto(codigo, nomeOnline);
 
-  //   // Buscar foto do produto
-  //   const foto = buscarFoto(codigo);
+    // Buscar foto do produto
+    const foto = buscarFoto(codigo);
 
-  //   return res.json({
-  //     ok: true,
-  //     origem: "cosmos",
-  //     produto: {
-  //       "cod de barra": codigo,
-  //       nome: nomeOnline,
-  //       foto: foto
-  //     }
-  //   });
-  // }
+    return res.json({
+      ok: true,
+      origem: "cosmos",
+      produto: {
+        "cod de barra": codigo,
+        nome: nomeOnline,
+        produto: nomeOnline,
+        foto: foto
+      }
+    });
+  }
 
   // Nada encontrado
-  console.log("❌ Produto não encontrado na base local");
+  console.log("❌ Produto não encontrado em nenhuma base");
   res.json({ ok: false, mensagem: "Produto não encontrado" });
 });
 
