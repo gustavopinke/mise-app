@@ -435,29 +435,29 @@ app.get("/consulta/:codigo", async (req, res) => {
     }
   }
 
-  // 3ª BUSCA ONLINE (Cosmos)
-  console.log("🌐 Buscando no Cosmos...");
-  const nomeOnline = await buscarCosmos(codigo);
-  if (nomeOnline) {
-    console.log("✅ Encontrado no Cosmos:", nomeOnline);
-    salvarProduto(codigo, nomeOnline);
+  // 3ª BUSCA ONLINE (Cosmos) - DESABILITADA
+  // console.log("🌐 Buscando no Cosmos...");
+  // const nomeOnline = await buscarCosmos(codigo);
+  // if (nomeOnline) {
+  //   console.log("✅ Encontrado no Cosmos:", nomeOnline);
+  //   salvarProduto(codigo, nomeOnline);
 
-    // Buscar foto do produto
-    const foto = buscarFoto(codigo);
+  //   // Buscar foto do produto
+  //   const foto = buscarFoto(codigo);
 
-    return res.json({
-      ok: true,
-      origem: "cosmos",
-      produto: {
-        "cod de barra": codigo,
-        nome: nomeOnline,
-        foto: foto
-      }
-    });
-  }
+  //   return res.json({
+  //     ok: true,
+  //     origem: "cosmos",
+  //     produto: {
+  //       "cod de barra": codigo,
+  //       nome: nomeOnline,
+  //       foto: foto
+  //     }
+  //   });
+  // }
 
   // Nada encontrado
-  console.log("❌ Produto não encontrado em nenhuma fonte");
+  console.log("❌ Produto não encontrado na base local");
   res.json({ ok: false, mensagem: "Produto não encontrado" });
 });
 

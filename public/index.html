@@ -28,7 +28,6 @@
       background: white;
       border-radius: 20px;
       padding: 0;
-      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
       text-align: center;
       overflow: hidden;
     }
@@ -38,13 +37,30 @@
       padding: 25px 15px;
       margin: 0;
       width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .logo-container.fixed {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 420px;
+      z-index: 999;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-container.fixed .logo {
+      width: 100px;
     }
 
     .logo {
       width: 150px;
       display: block;
       margin: 0 auto;
-      filter: brightness(0);
+      transition: all 0.3s ease;
     }
 
     .form-content {
@@ -57,16 +73,50 @@
       color: #222;
     }
 
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+      margin-top: 10px;
+    }
+
     input {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
+      padding: 12px 40px 12px 12px;
       border: 2px solid #ccc;
       border-radius: 10px;
       font-size: 18px;
       text-align: center;
       box-sizing: border-box;
       -moz-appearance: textfield;
+    }
+
+    .clear-button {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #ccc;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      transition: all 0.2s;
+    }
+
+    .clear-button:hover {
+      background: #999;
+    }
+
+    .clear-button.visible {
+      display: flex;
     }
 
     input::-webkit-outer-spin-button,
@@ -158,8 +208,8 @@
 
     .camera-wrapper {
       position: relative;
-      width: 90%;
-      max-width: 500px;
+      width: 95%;
+      max-width: 700px;
       aspect-ratio: 4/3;
       border-radius: 10px;
       overflow: hidden;
@@ -177,8 +227,8 @@
       position: absolute;
       top: 20px;
       right: 20px;
-      background: white;
-      color: #333;
+      background: transparent;
+      color: #66F7CC;
       border: none;
       padding: 12px 24px;
       border-radius: 8px;
@@ -186,7 +236,7 @@
       font-weight: bold;
       cursor: pointer;
       z-index: 1001;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     }
 
     .scanner-frame {
@@ -312,13 +362,16 @@
       <h2>Scanner de Códigos de Barras</h2>
 
       <!-- INPUT COM TYPE TEXT PARA EVITAR SETAS -->
-      <input
-          id="codigo"
-          type="text"
-          placeholder="Digite ou escaneie o código"
-          inputmode="numeric"
-          pattern="[0-9]*"
-      />
+      <div class="input-wrapper">
+        <input
+            id="codigo"
+            type="text"
+            placeholder="Digite ou escaneie o código"
+            inputmode="numeric"
+            pattern="[0-9]*"
+        />
+        <button class="clear-button" id="clear-button">✕</button>
+      </div>
 
       <button id="buscar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -365,10 +418,38 @@
     const imageModal = document.getElementById("image-modal");
     const modalImage = document.getElementById("modal-image");
     const scanStatus = document.querySelector(".scan-status");
+    const clearButton = document.getElementById("clear-button");
     let codeReader = null;
     let stream = null;
     let ultimaBusca = "";
     let buscaTimeout = null;
+
+    // LIMPAR INPUT AO CLICAR NELE
+    input.addEventListener('click', () => {
+      input.value = '';
+      clearButton.classList.remove('visible');
+      resultado.innerHTML = '';
+      ultimaBusca = '';
+    });
+
+    // MOSTRAR/ESCONDER BOTÃO X
+    input.addEventListener('input', () => {
+      if (input.value.length > 0) {
+        clearButton.classList.add('visible');
+      } else {
+        clearButton.classList.remove('visible');
+      }
+    });
+
+    // LIMPAR INPUT AO CLICAR NO X
+    clearButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      input.value = '';
+      clearButton.classList.remove('visible');
+      resultado.innerHTML = '';
+      ultimaBusca = '';
+      input.focus();
+    });
 
     // MODAL DE IMAGEM
     function abrirImagemModal(src) {
@@ -573,6 +654,20 @@
       videoContainer.classList.remove('active');
       scanStatus.textContent = "Posicione o código de barras no centro";
     }
+
+    // LOGO FIXO AO ROLAR
+    const logoContainer = document.querySelector('.logo-container');
+    const container = document.querySelector('.container');
+
+    window.addEventListener('scroll', () => {
+      const containerTop = container.getBoundingClientRect().top;
+
+      if (containerTop <= 0) {
+        logoContainer.classList.add('fixed');
+      } else {
+        logoContainer.classList.remove('fixed');
+      }
+    });
 
   </script>
 </body>
