@@ -39,11 +39,11 @@ Edite o arquivo `.env` com um editor de texto (Notepad, VS Code, etc.) e preench
 
 ```env
 # Cloudflare R2 Configuration
-R2_ACCOUNT_ID=79a87cdae451f906824c74cd1db9
-R2_ACCESS_KEY_ID=sua_access_key_aqui
-R2_SECRET_ACCESS_KEY=sua_secret_key_aqui
+R2_ACCOUNT_ID=79a87cdae451f906824c74cd1db91eb1
+R2_ACCESS_KEY_ID=s675f6d6b75446471973b77a725d9151
+R2_SECRET_ACCESS_KEY=23bb007a27f5fd688ebe891ef1e62b62babb2b3bb00c73b881e6b17124fcf
 R2_BUCKET_NAME=mise
-R2_PUBLIC_URL=https://79a87cdae451f906824c74cd1db9.r2.cloudflarestorage.com
+R2_PUBLIC_URL=https://79a87cdae451f906824c74cd1db91eb1.r2.cloudflarestorage.com
 ```
 
 **Como obter as credenciais:**
