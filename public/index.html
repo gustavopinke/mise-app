@@ -84,17 +84,21 @@
       color: white;
       border: none;
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
+      font-size: 18px;
+      line-height: 28px;
       padding: 0;
+      margin: 0;
       transition: all 0.2s;
       font-family: Arial, sans-serif;
+      font-weight: normal;
+      text-align: center;
+      vertical-align: middle;
     }
 
     .clear-button:hover {
@@ -532,28 +536,35 @@
 
       // Atualizar ultimaBusca ANTES da busca para evitar duplicatas em requisições rápidas
       ultimaBusca = codigo;
-      resultado.innerHTML = "<p style='margin-top: 20px;'>Buscando produto...</p>";
+      resultado.innerHTML = "<p style='margin-top: 20px;'>🔍 Buscando na base local...</p>";
 
       try {
+        console.log("🔍 Iniciando busca para código:", codigo);
         const resp = await fetch(`/consulta/${codigo}`);
         const data = await resp.json();
+
+        console.log("📦 Resposta recebida:", data);
 
         if (!data.ok) {
           resultado.innerHTML = `
             <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 10px; color: #c62828;">
               <strong>❌ Produto não encontrado</strong>
               <p style="margin: 5px 0 0 0; font-size: 14px;">Código: ${codigo}</p>
+              <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">${data.mensagem || 'Produto não encontrado em nenhuma base'}</p>
             </div>
           `;
           return;
         }
 
+        console.log("✅ Produto encontrado! Origem:", data.origem);
         mostrarProduto(data.produto, data.origem);
       } catch (error) {
+        console.error("❌ Erro na busca:", error);
         resultado.innerHTML = `
           <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; color: #e65100;">
             <strong>⚠️ Erro de conexão</strong>
             <p style="margin: 5px 0 0 0; font-size: 14px;">Verifique sua internet e tente novamente.</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">${error.message}</p>
           </div>
         `;
         // Resetar ultimaBusca em caso de erro para permitir nova tentativa

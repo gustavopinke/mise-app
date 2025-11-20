@@ -229,6 +229,11 @@ function limparNome(nome) {
 // BUSCA ONLINE – COSMOS (Bluesoft) COM SCRAPING
 // -------------------------------------------
 async function buscarCosmos(codigo) {
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🌐 INICIANDO BUSCA NO COSMOS");
+  console.log(`📋 Código: ${codigo}`);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
   // Lista de URLs para tentar (ordem de prioridade)
   const urls = [
     `https://cosmos.bluesoft.com.br/produtos/${codigo}`,
@@ -244,16 +249,16 @@ async function buscarCosmos(codigo) {
 
   for (const url of urls) {
     try {
-      console.log("🌐 Tentando URL Cosmos:", url);
+      console.log(`\n🔗 Tentando URL [${urls.indexOf(url) + 1}/${urls.length}]:`, url);
 
       const resposta = await axios.get(url, {
         headers,
-        timeout: 20000,
+        timeout: 30000, // Aumentado para 30 segundos
         validateStatus: (status) => status < 500,
         maxRedirects: 5
       });
 
-      console.log("📦 Resposta Cosmos status:", resposta.status);
+      console.log("📊 Status da resposta:", resposta.status);
 
       if (resposta.status === 404) {
         console.log("❌ Produto não encontrado nesta URL (404)");
@@ -335,22 +340,32 @@ async function buscarCosmos(codigo) {
       }
 
     } catch (err) {
-      console.error("❌ Erro ao buscar em", url, ":", err.message);
+      console.error(`\n❌ ERRO ao buscar em ${url}`);
+      console.error("   Mensagem:", err.message);
 
       if (err.response) {
-        console.error("   Status:", err.response.status);
+        console.error("   Status HTTP:", err.response.status);
+        console.error("   Headers:", err.response.headers);
       }
 
       if (err.code === 'ECONNABORTED') {
-        console.error("   Timeout da requisição");
+        console.error("   ⏱️ TIMEOUT da requisição (30s)");
+      } else if (err.code === 'ENOTFOUND') {
+        console.error("   🌐 Servidor não encontrado / Sem internet");
+      } else {
+        console.error("   Código de erro:", err.code);
       }
 
       // Continuar tentando próxima URL
+      console.log("   ⏭️ Tentando próxima URL...");
       continue;
     }
   }
 
-  console.log("❌ Produto não encontrado em nenhuma URL do Cosmos");
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("❌ COSMOS: Produto NÃO encontrado");
+  console.log("   Tentativas: " + urls.length + " URLs");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   return null;
 }
 
@@ -473,29 +488,33 @@ app.get("/consulta/:codigo", async (req, res) => {
 
   // 3ª BUSCA ONLINE (Cosmos)
   console.log("🌐 Buscando no Cosmos...");
-  const nomeOnline = await buscarCosmos(codigo);
-  if (nomeOnline) {
-    console.log("✅ Encontrado no Cosmos:", nomeOnline);
-    salvarProduto(codigo, nomeOnline);
+  try {
+    const nomeOnline = await buscarCosmos(codigo);
+    if (nomeOnline) {
+      console.log("✅ Encontrado no Cosmos:", nomeOnline);
+      salvarProduto(codigo, nomeOnline);
 
-    // Buscar foto do produto
-    const foto = buscarFoto(codigo);
+      // Buscar foto do produto
+      const foto = buscarFoto(codigo);
 
-    return res.json({
-      ok: true,
-      origem: "cosmos",
-      produto: {
-        "cod de barra": codigo,
-        nome: nomeOnline,
-        produto: nomeOnline,
-        foto: foto
-      }
-    });
+      return res.json({
+        ok: true,
+        origem: "cosmos",
+        produto: {
+          "cod de barra": codigo,
+          nome: nomeOnline,
+          produto: nomeOnline,
+          foto: foto
+        }
+      });
+    }
+  } catch (erroCosmosGenerico) {
+    console.error("❌ Erro ao buscar no Cosmos:", erroCosmosGenerico);
   }
 
   // Nada encontrado
   console.log("❌ Produto não encontrado em nenhuma base");
-  res.json({ ok: false, mensagem: "Produto não encontrado" });
+  res.json({ ok: false, mensagem: "Produto não encontrado em nenhuma base (local, cache ou Cosmos)" });
 });
 
 // -------------------------------------------
