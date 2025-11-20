@@ -14,7 +14,7 @@
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: #00c896;
+      background: #66F7CC;
       display: flex;
       justify-content: center;
       padding: 20px;
@@ -31,7 +31,7 @@
     }
 
     .logo-container {
-      background: #00c896;
+      background: #66F7CC;
       padding: 15px;
       border-radius: 15px;
       margin: 0 auto 15px;
@@ -79,8 +79,9 @@
     }
 
     #buscar {
-      background: #00c896;
-      color: white;
+      background: #66F7CC;
+      color: #222;
+      font-weight: 600;
     }
 
     #scanner {
@@ -154,9 +155,18 @@
       width: 80%;
       max-width: 400px;
       height: 2px;
-      background: #00c896;
-      box-shadow: 0 0 10px #00c896;
+      background: #66F7CC;
+      box-shadow: 0 0 10px #66F7CC;
       animation: scan 2s linear infinite;
+    }
+
+    .produto-imagem {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border-radius: 12px;
+      margin: 15px auto;
+      display: block;
     }
 
     @keyframes scan {
@@ -217,20 +227,28 @@
 
     function mostrarProduto(produto, origem) {
       let infoHTML = '';
+      const codigo = produto['cod de barra'] || produto['cod. de barra'] || produto.codigo;
 
       // Mostrar todas as informações do produto
       for (const [key, value] of Object.entries(produto)) {
-        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome') {
+        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome' && key !== 'foto') {
           const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
           infoHTML += `<p><b>${label}:</b> ${value}</p>`;
         }
       }
 
+      // Adicionar imagem se existir
+      let imagemHTML = '';
+      if (produto.foto) {
+        imagemHTML = `<img src="/fotos/${produto.foto}" class="produto-imagem" alt="${produto.produto || produto.nome}" onerror="this.style.display='none'">`;
+      }
+
       resultado.innerHTML = `
         <div class="produto-card">
+          ${imagemHTML}
           <h3>${produto.produto || produto.nome || 'Produto Encontrado'}</h3>
           <div class="produto-info">
-            <p><b>Código de Barras:</b> ${produto['cod de barra'] || produto['cod. de barra'] || produto.codigo}</p>
+            <p><b>Código de Barras:</b> ${codigo}</p>
             ${infoHTML}
           </div>
         </div>

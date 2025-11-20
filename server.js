@@ -24,6 +24,9 @@ app.use(express.json());
 // Arquivos estáticos (HTML, imagens, etc)
 app.use(express.static(path.join(projectRoot, "public")));
 
+// Servir fotos dos produtos
+app.use("/fotos", express.static(path.join(projectRoot, "data", "fotos_produtos")));
+
 // -------------------------------------------
 // NORMALIZA CÓDIGO DE BARRAS (7.8913E+12 → 7891300000000)
 // -------------------------------------------
@@ -121,20 +124,74 @@ function carregarBase() {
 }
 
 // -------------------------------------------
+// BUSCA FOTO DO PRODUTO
+// -------------------------------------------
+function buscarFoto(codigo) {
+  const fotosDir = path.join(projectRoot, "data", "fotos_produtos");
+
+  if (!fs.existsSync(fotosDir)) {
+    return null;
+  }
+
+  try {
+    const arquivos = fs.readdirSync(fotosDir);
+
+    // Procurar arquivo que comece com o código de barras
+    const foto = arquivos.find(arquivo => {
+      const nomeArquivo = arquivo.toLowerCase();
+      return nomeArquivo.startsWith(codigo) &&
+             (nomeArquivo.endsWith('.jpg') ||
+              nomeArquivo.endsWith('.jpeg') ||
+              nomeArquivo.endsWith('.png') ||
+              nomeArquivo.endsWith('.webp'));
+    });
+
+    return foto || null;
+  } catch (err) {
+    console.error("Erro ao buscar foto:", err);
+    return null;
+  }
+}
+
+// -------------------------------------------
 // BUSCA ONLINE – COSMOS (Bluesoft)
 // -------------------------------------------
 async function buscarCosmos(codigo) {
   try {
     const url = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`;
+    console.log("🌐 URL Cosmos:", url);
+
     const resposta = await axios.get(url, {
-      headers: { "X-Cosmos-Token": "" } // coloque sua chave aqui se tiver
+      headers: {
+        "X-Cosmos-Token": "", // Token vazio funciona para busca pública
+        "User-Agent": "Mozilla/5.0"
+      },
+      timeout: 10000 // 10 segundos timeout
     });
 
-    if (resposta.data && resposta.data.description) {
-      return resposta.data.description;
+    console.log("📦 Resposta Cosmos status:", resposta.status);
+
+    if (resposta.data) {
+      console.log("📦 Dados Cosmos:", JSON.stringify(resposta.data).substring(0, 200));
+
+      // Tentar diferentes campos de nome
+      const nome = resposta.data.description ||
+                   resposta.data.brand_name ||
+                   resposta.data.product_name ||
+                   resposta.data.name ||
+                   null;
+
+      if (nome) {
+        console.log("✅ Nome encontrado no Cosmos:", nome);
+        return nome;
+      }
     }
   } catch (err) {
-    // Silencioso – só retorna null se der erro
+    console.error("❌ Erro ao buscar no Cosmos:", err.message);
+    if (err.response) {
+      console.error("   Status:", err.response.status);
+      console.error("   Data:", JSON.stringify(err.response.data).substring(0, 200));
+    }
   }
   return null;
 }
@@ -219,6 +276,13 @@ app.get("/consulta/:codigo", async (req, res) => {
 
   if (encontradoLocal) {
     console.log("✅ Encontrado na base local");
+
+    // Buscar foto do produto
+    const foto = buscarFoto(codigo);
+    if (foto) {
+      encontradoLocal.foto = foto;
+    }
+
     return res.json({
       ok: true,
       origem: "local",
@@ -233,12 +297,17 @@ app.get("/consulta/:codigo", async (req, res) => {
     const noCache = cache.find(p => p.codigo === codigo);
     if (noCache) {
       console.log("✅ Encontrado no cache");
+
+      // Buscar foto do produto
+      const foto = buscarFoto(codigo);
+
       return res.json({
         ok: true,
         origem: "cosmos",
         produto: {
           "cod de barra": noCache.codigo,
-          nome: noCache.nome
+          nome: noCache.nome,
+          foto: foto
         }
       });
     }
@@ -250,12 +319,17 @@ app.get("/consulta/:codigo", async (req, res) => {
   if (nomeOnline) {
     console.log("✅ Encontrado no Cosmos:", nomeOnline);
     salvarProduto(codigo, nomeOnline);
+
+    // Buscar foto do produto
+    const foto = buscarFoto(codigo);
+
     return res.json({
       ok: true,
       origem: "cosmos",
       produto: {
         "cod de barra": codigo,
-        nome: nomeOnline
+        nome: nomeOnline,
+        foto: foto
       }
     });
   }
