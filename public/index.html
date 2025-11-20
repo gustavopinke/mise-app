@@ -80,29 +80,29 @@
       right: 12px;
       top: 50%;
       transform: translateY(-50%);
-      background: #ccc;
-      color: white;
+      background: transparent;
+      color: #999;
       border: none;
-      border-radius: 50%;
-      width: 28px;
-      height: 28px;
+      width: 20px;
+      height: 20px;
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 18px;
-      line-height: 28px;
+      font-size: 16px;
+      line-height: 20px;
       padding: 0;
       margin: 0;
       transition: all 0.2s;
       font-family: Arial, sans-serif;
-      font-weight: normal;
+      font-weight: bold;
       text-align: center;
       vertical-align: middle;
     }
 
     .clear-button:hover {
-      background: #999;
+      color: #666;
+      transform: translateY(-50%) scale(1.1);
     }
 
     .clear-button.visible {
@@ -364,10 +364,11 @@
       </div>
 
       <button id="buscar">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
         </svg>
-        Buscar Produto
+        Buscando na base mise
       </button>
 
       <button id="scanner">
@@ -550,7 +551,6 @@
             <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 10px; color: #c62828;">
               <strong>❌ Produto não encontrado</strong>
               <p style="margin: 5px 0 0 0; font-size: 14px;">Código: ${codigo}</p>
-              <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">${data.mensagem || 'Produto não encontrado em nenhuma base'}</p>
             </div>
           `;
           return;

@@ -325,7 +325,13 @@ async function buscarCosmos(codigo) {
           $('.product-description').text().trim(),
           $('.produto-nome').text().trim(),
           $('#product-name').text().trim(),
-          $('.product-title').text().trim()
+          $('.product-title').text().trim(),
+          $('[itemprop="name"]').text().trim(),
+          $('.card-title').text().trim(),
+          $('.product-info h1').text().trim(),
+          $('.product-info h2').text().trim(),
+          $('meta[name="description"]').attr('content'),
+          $('title').text().trim()
         ];
 
         for (const desc of descricoes) {
@@ -337,6 +343,30 @@ async function buscarCosmos(codigo) {
         }
 
         console.log("⚠️ HTML recebido mas nenhum nome encontrado");
+        console.log("⚠️ Tentando buscar qualquer texto em elementos principais...");
+
+        // Método 5: Buscar em divs ou sections com conteúdo relevante
+        const textosEncontrados = [];
+        $('div, section, article').each((i, elem) => {
+          const texto = $(elem).text().trim();
+          if (texto.length > 10 && texto.length < 200) {
+            textosEncontrados.push(texto);
+          }
+        });
+
+        if (textosEncontrados.length > 0) {
+          console.log(`⚠️ Encontrados ${textosEncontrados.length} textos no HTML, usando o primeiro relevante`);
+          // Usar o primeiro texto que pareça ser um nome de produto
+          for (const texto of textosEncontrados) {
+            if (texto && !texto.includes('Cookie') && !texto.includes('Login') && !texto.includes('Cadastr')) {
+              nome = limparNome(texto);
+              console.log("✅ Nome encontrado (busca genérica):", nome);
+              return nome;
+            }
+          }
+        }
+
+        console.log("❌ Nenhum nome de produto encontrado no HTML");
       }
 
     } catch (err) {
