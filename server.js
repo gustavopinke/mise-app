@@ -14,6 +14,11 @@ const projectRoot = __dirname;
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Cache em memória para acelerar buscas
+let cacheBase = null;
+let ultimaAtualizacao = 0;
+const CACHE_TIMEOUT = 60000; // 1 minuto
+
 app.use(express.json());
 
 // Arquivos estáticos (HTML, imagens, etc)
@@ -35,9 +40,16 @@ function normalizarCodigo(valor) {
 }
 
 // -------------------------------------------
-// CARREGA BASE LOCAL (CSV ou XLSX)
+// CARREGA BASE LOCAL (CSV ou XLSX) COM CACHE
 // -------------------------------------------
 function carregarBase() {
+  const agora = Date.now();
+
+  // Retorna cache se ainda válido
+  if (cacheBase && (agora - ultimaAtualizacao) < CACHE_TIMEOUT) {
+    return cacheBase;
+  }
+
   const csvPath = path.join(projectRoot, "data", "PARA_BUSCAR_DO_SITE.csv");
   const xlsxPath = path.join(projectRoot, "data", "PARA_BUSCAR_DO_SITE.xlsx");
 
@@ -71,6 +83,10 @@ function carregarBase() {
         produtos.push(obj);
       }
     }
+
+    // Atualizar cache
+    cacheBase = produtos;
+    ultimaAtualizacao = agora;
     return produtos;
   }
 
@@ -95,6 +111,10 @@ function carregarBase() {
         produtos.push(p);
       }
     });
+
+    // Atualizar cache
+    cacheBase = produtos;
+    ultimaAtualizacao = agora;
   }
 
   return produtos;
@@ -198,6 +218,7 @@ app.get("/consulta/:codigo", async (req, res) => {
   const encontradoLocal = baseLocal.find(p => p["cod de barra"] === codigo);
 
   if (encontradoLocal) {
+    console.log("✅ Encontrado na base local");
     return res.json({
       ok: true,
       origem: "local",
@@ -211,26 +232,36 @@ app.get("/consulta/:codigo", async (req, res) => {
     const cache = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
     const noCache = cache.find(p => p.codigo === codigo);
     if (noCache) {
+      console.log("✅ Encontrado no cache");
       return res.json({
         ok: true,
         origem: "cosmos",
-        produto: noCache
+        produto: {
+          "cod de barra": noCache.codigo,
+          nome: noCache.nome
+        }
       });
     }
   }
 
   // 3ª BUSCA ONLINE (Cosmos)
+  console.log("🌐 Buscando no Cosmos...");
   const nomeOnline = await buscarCosmos(codigo);
   if (nomeOnline) {
+    console.log("✅ Encontrado no Cosmos:", nomeOnline);
     salvarProduto(codigo, nomeOnline);
     return res.json({
       ok: true,
       origem: "cosmos",
-      produto: { codigo, nome: nomeOnline }
+      produto: {
+        "cod de barra": codigo,
+        nome: nomeOnline
+      }
     });
   }
 
   // Nada encontrado
+  console.log("❌ Produto não encontrado em nenhuma fonte");
   res.json({ ok: false, mensagem: "Produto não encontrado" });
 });
 

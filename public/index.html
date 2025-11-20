@@ -6,10 +6,14 @@
 
   <title>MISE - Scanner</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', sans-serif;
       background: #00c896;
       display: flex;
       justify-content: center;
@@ -100,29 +104,11 @@
     .produto-info {
       margin-top: 10px;
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.8;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 5px 10px;
-      margin-top: 5px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .local {
-      background: #f4a261;
-      color: white;
-    }
-    .cosmos {
-      background: #008cff;
-      color: white;
-    }
-    .openfood {
-      background: #2a9d8f;
-      color: white;
+    .produto-info p {
+      margin: 8px 0;
     }
 
     #video-container {
@@ -234,8 +220,8 @@
 
       // Mostrar todas as informações do produto
       for (const [key, value] of Object.entries(produto)) {
-        if (value && key !== 'cod de barra' && key !== 'codigo') {
-          const label = key.charAt(0).toUpperCase() + key.slice(1);
+        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome') {
+          const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
           infoHTML += `<p><b>${label}:</b> ${value}</p>`;
         }
       }
@@ -243,11 +229,8 @@
       resultado.innerHTML = `
         <div class="produto-card">
           <h3>${produto.produto || produto.nome || 'Produto Encontrado'}</h3>
-          <span class="badge ${origem}">
-            ${origem === "local" ? "📦 Base Local" : origem === "cosmos" ? "🌐 Cosmos" : "🥫 OpenFoodFacts"}
-          </span>
           <div class="produto-info">
-            <p><b>Código:</b> ${produto['cod de barra'] || produto.codigo}</p>
+            <p><b>Código de Barras:</b> ${produto['cod de barra'] || produto['cod. de barra'] || produto.codigo}</p>
             ${infoHTML}
           </div>
         </div>
