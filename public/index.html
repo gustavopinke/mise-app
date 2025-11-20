@@ -10,7 +10,7 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #7ff3e5;
+      background: #00c896;
       display: flex;
       justify-content: center;
       padding: 20px;
@@ -26,9 +26,16 @@
       text-align: center;
     }
 
+    .logo-container {
+      background: #00c896;
+      padding: 15px;
+      border-radius: 15px;
+      margin: 0 auto 15px;
+      width: fit-content;
+    }
+
     .logo {
       width: 150px;
-      margin: 0 auto 15px;
       display: block;
     }
 
@@ -46,6 +53,14 @@
       border-radius: 10px;
       font-size: 18px;
       text-align: center;
+      box-sizing: border-box;
+      -moz-appearance: textfield;
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
     button {
@@ -60,7 +75,7 @@
     }
 
     #buscar {
-      background: #00c2a8;
+      background: #00c896;
       color: white;
     }
 
@@ -80,6 +95,12 @@
     .produto-card h3 {
       margin: 0;
       font-size: 20px;
+    }
+
+    .produto-info {
+      margin-top: 10px;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
     .badge {
@@ -104,22 +125,78 @@
       color: white;
     }
 
+    #video-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    #video-container.active {
+      display: flex;
+    }
+
+    #video {
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+    }
+
+    #close-camera {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: white;
+      color: #333;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .scanner-line {
+      position: absolute;
+      width: 80%;
+      max-width: 400px;
+      height: 2px;
+      background: #00c896;
+      box-shadow: 0 0 10px #00c896;
+      animation: scan 2s linear infinite;
+    }
+
+    @keyframes scan {
+      0%, 100% { transform: translateY(-150px); }
+      50% { transform: translateY(150px); }
+    }
+
   </style>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 
 <body>
 
   <div class="container">
 
-    <img src="logo-mise.png" class="logo" />
+    <div class="logo-container">
+      <img src="logo-mise.png" class="logo" />
+    </div>
 
     <h2>Scanner de Códigos de Barras</h2>
 
-    <!-- INPUT ORIGINAL COM TECLADO NATIVO DO CELULAR -->
-    <input 
-        id="codigo" 
-        type="number" 
-        placeholder="Digite ou escaneie o código" 
+    <!-- INPUT COM TYPE TEXT PARA EVITAR SETAS -->
+    <input
+        id="codigo"
+        type="text"
+        placeholder="Digite ou escaneie o código"
         inputmode="numeric"
         pattern="[0-9]*"
     />
@@ -130,9 +207,20 @@
     <div id="resultado"></div>
   </div>
 
+  <!-- CONTAINER DA CÂMERA -->
+  <div id="video-container">
+    <button id="close-camera">✕ Fechar</button>
+    <video id="video"></video>
+    <div class="scanner-line"></div>
+  </div>
+
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
+    const videoContainer = document.getElementById("video-container");
+    const video = document.getElementById("video");
+    let codeReader = null;
+    let stream = null;
 
     // ENTER dispara busca
     input.addEventListener("keydown", (e) => {
@@ -141,14 +229,27 @@
 
     document.getElementById("buscar").onclick = buscar;
 
-    function mostrarProduto(nome, origem, codigo) {
+    function mostrarProduto(produto, origem) {
+      let infoHTML = '';
+
+      // Mostrar todas as informações do produto
+      for (const [key, value] of Object.entries(produto)) {
+        if (value && key !== 'cod de barra' && key !== 'codigo') {
+          const label = key.charAt(0).toUpperCase() + key.slice(1);
+          infoHTML += `<p><b>${label}:</b> ${value}</p>`;
+        }
+      }
+
       resultado.innerHTML = `
         <div class="produto-card">
-          <h3>${nome}</h3>
+          <h3>${produto.produto || produto.nome || 'Produto Encontrado'}</h3>
           <span class="badge ${origem}">
             ${origem === "local" ? "📦 Base Local" : origem === "cosmos" ? "🌐 Cosmos" : "🥫 OpenFoodFacts"}
           </span>
-          <p><b>Código:</b> ${codigo}</p>
+          <div class="produto-info">
+            <p><b>Código:</b> ${produto['cod de barra'] || produto.codigo}</p>
+            ${infoHTML}
+          </div>
         </div>
       `;
     }
@@ -171,13 +272,55 @@
         return;
       }
 
-      mostrarProduto(data.produto.nome, data.origem, data.produto.codigo);
+      mostrarProduto(data.produto, data.origem);
     }
 
-    // FUTURO: scanner (deixo botão pronto)
-    document.getElementById("scanner").onclick = () => {
-      alert("Scanner será ativado aqui (colocaremos depois)");
+    // SCANNER DE CÂMERA
+    document.getElementById("scanner").onclick = async () => {
+      try {
+        videoContainer.classList.add('active');
+
+        codeReader = new ZXing.BrowserBarcodeReader();
+
+        const constraints = {
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        video.play();
+
+        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+          if (result) {
+            input.value = result.text;
+            fecharCamera();
+            buscar();
+          }
+        });
+
+      } catch (err) {
+        console.error('Erro ao acessar câmera:', err);
+        alert('Não foi possível acessar a câmera. Verifique as permissões.');
+        fecharCamera();
+      }
     };
+
+    document.getElementById("close-camera").onclick = fecharCamera;
+
+    function fecharCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      if (codeReader) {
+        codeReader.reset();
+      }
+      videoContainer.classList.remove('active');
+    }
 
   </script>
 </body>

@@ -45,19 +45,31 @@ function carregarBase() {
 
   // Prioridade para CSV
   if (fs.existsSync(csvPath)) {
-    const conteudo = fs.readFileSync(csvPath, "utf8").split("\n");
-    const cabecalhos = conteudo[0].split(",").map(h => h.trim().toLowerCase());
+    const conteudo = fs.readFileSync(csvPath, "utf8");
+    const linhas = conteudo.split("\n").filter(l => l.trim());
 
-    for (let i = 1; i < conteudo.length; i++) {
-      const colunas = conteudo[i].split(",");
-      if (!colunas[0]) continue;
+    if (linhas.length === 0) return produtos;
+
+    // Detectar delimitador (ponto e vírgula ou vírgula)
+    const delimitador = linhas[0].includes(';') ? ';' : ',';
+    const cabecalhos = linhas[0].split(delimitador).map(h => h.trim().toLowerCase());
+
+    for (let i = 1; i < linhas.length; i++) {
+      const colunas = linhas[i].split(delimitador);
+      if (!colunas[0] || !colunas[0].trim()) continue;
 
       let obj = {};
       cabecalhos.forEach((cab, idx) => {
         obj[cab] = (colunas[idx] || "").trim();
       });
-      obj["cod de barra"] = normalizarCodigo(obj["cod de barra"] || obj["codigo de barra"] || obj["gtin"]);
-      produtos.push(obj);
+
+      // Normalizar código de barra
+      const codigoOriginal = obj["cod. de barra"] || obj["cod de barra"] || obj["codigo de barra"] || obj["gtin"];
+      obj["cod de barra"] = normalizarCodigo(codigoOriginal);
+
+      if (obj["cod de barra"]) {
+        produtos.push(obj);
+      }
     }
     return produtos;
   }
@@ -71,10 +83,17 @@ function carregarBase() {
     linhas.forEach(l => {
       let p = {};
       for (const key in l) {
-        p[key.toString().toLowerCase().trim()] = String(l[key] ?? "").trim();
+        const keyLower = key.toString().toLowerCase().trim();
+        p[keyLower] = String(l[key] ?? "").trim();
       }
-      p["cod de barra"] = normalizarCodigo(p["cod de barra"] || p["codigo de barra"] || p["gtin"]);
-      produtos.push(p);
+
+      // Normalizar código de barra
+      const codigoOriginal = p["cod. de barra"] || p["cod de barra"] || p["codigo de barra"] || p["gtin"];
+      p["cod de barra"] = normalizarCodigo(codigoOriginal);
+
+      if (p["cod de barra"]) {
+        produtos.push(p);
+      }
     });
   }
 
@@ -101,12 +120,14 @@ async function buscarCosmos(codigo) {
 }
 
 // -------------------------------------------
-// SALVA PRODUTOS ENCONTRADOS ONLINE
+// SALVA PRODUTOS ENCONTRADOS ONLINE NO EXCEL
 // -------------------------------------------
 function salvarProduto(codigo, nome) {
+  const excelPath = path.join(projectRoot, "data", "OK BASE DO APP COLETADO.xlsx");
   const jsonPath = path.join(projectRoot, "data", "produtos.json");
-  let lista = [];
 
+  // Salvar no JSON (cache rápido)
+  let lista = [];
   try {
     if (fs.existsSync(jsonPath)) {
       lista = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
@@ -118,6 +139,46 @@ function salvarProduto(codigo, nome) {
   if (!lista.find(x => x.codigo === codigo)) {
     lista.push({ codigo, nome });
     fs.writeFileSync(jsonPath, JSON.stringify(lista, null, 2));
+  }
+
+  // Salvar no Excel
+  let workbook;
+  let dados = [];
+
+  // Tentar carregar Excel existente
+  if (fs.existsSync(excelPath)) {
+    try {
+      workbook = XLSX.readFile(excelPath);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      dados = XLSX.utils.sheet_to_json(sheet);
+    } catch (e) {
+      console.error("Erro ao ler Excel existente:", e);
+      dados = [];
+    }
+  }
+
+  // Verificar se produto já existe no Excel
+  const jaExiste = dados.some(item => {
+    const codigoExistente = normalizarCodigo(item["Código de Barra"] || item["codigo"] || item["Cod. de Barra"]);
+    return codigoExistente === codigo;
+  });
+
+  if (!jaExiste) {
+    // Adicionar novo produto
+    dados.push({
+      "Código de Barra": codigo,
+      "Nome do Produto": nome,
+      "Data de Coleta": new Date().toLocaleString("pt-BR")
+    });
+
+    // Criar nova planilha
+    const novaSheet = XLSX.utils.json_to_sheet(dados);
+    const novoWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(novoWorkbook, novaSheet, "Produtos Coletados");
+
+    // Salvar arquivo
+    XLSX.writeFile(novoWorkbook, excelPath);
+    console.log("✅ Produto salvo no Excel:", codigo, "-", nome);
   }
 }
 
