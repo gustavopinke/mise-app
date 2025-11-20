@@ -14,10 +14,10 @@ const projectRoot = __dirname;
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Cache em memória para acelerar buscas
+// Cache em memória otimizado (economizar RAM no Render)
 let cacheBase = null;
 let ultimaAtualizacao = 0;
-const CACHE_TIMEOUT = 60000; // 1 minuto
+const CACHE_TIMEOUT = 300000; // 5 minutos - cache mais longo, menos recargas
 
 app.use(express.json());
 
@@ -164,33 +164,49 @@ async function buscarCosmos(codigo) {
     const resposta = await axios.get(url, {
       headers: {
         "X-Cosmos-Token": "", // Token vazio funciona para busca pública
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json"
       },
-      timeout: 10000 // 10 segundos timeout
+      timeout: 15000, // 15 segundos timeout
+      validateStatus: (status) => status < 500 // Aceitar 404, mas não 500+
     });
 
     console.log("📦 Resposta Cosmos status:", resposta.status);
 
-    if (resposta.data) {
-      console.log("📦 Dados Cosmos:", JSON.stringify(resposta.data).substring(0, 200));
+    if (resposta.status === 404) {
+      console.log("❌ Produto não existe no Cosmos (404)");
+      return null;
+    }
 
-      // Tentar diferentes campos de nome
+    if (resposta.data) {
+      // Log completo do JSON para debug
+      console.log("📦 Dados Cosmos completos:", JSON.stringify(resposta.data, null, 2));
+
+      // Tentar diferentes campos de nome (ordem de prioridade)
       const nome = resposta.data.description ||
-                   resposta.data.brand_name ||
                    resposta.data.product_name ||
+                   resposta.data.brand_name ||
                    resposta.data.name ||
+                   (resposta.data.gtin && resposta.data.gtin.description) ||
                    null;
 
       if (nome) {
         console.log("✅ Nome encontrado no Cosmos:", nome);
         return nome;
+      } else {
+        console.log("⚠️ Resposta do Cosmos não contém nome do produto");
+        console.log("   Chaves disponíveis:", Object.keys(resposta.data));
       }
     }
   } catch (err) {
     console.error("❌ Erro ao buscar no Cosmos:", err.message);
     if (err.response) {
       console.error("   Status:", err.response.status);
-      console.error("   Data:", JSON.stringify(err.response.data).substring(0, 200));
+      console.error("   Headers:", JSON.stringify(err.response.headers));
+      console.error("   Data:", JSON.stringify(err.response.data));
+    }
+    if (err.code) {
+      console.error("   Código de erro:", err.code);
     }
   }
   return null;
