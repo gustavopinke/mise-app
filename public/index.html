@@ -66,7 +66,7 @@
 
     input {
       width: 100%;
-      padding: 12px 40px 12px 12px;
+      padding: 12px 45px 12px 12px;
       border: 2px solid #ccc;
       border-radius: 10px;
       font-size: 18px;
@@ -77,21 +77,21 @@
 
     .clear-button {
       position: absolute;
-      right: 10px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
       background: #ccc;
       color: white;
       border: none;
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 14px;
-      line-height: 0;
+      font-size: 16px;
+      line-height: 1;
       padding: 0;
       transition: all 0.2s;
       font-family: Arial, sans-serif;
@@ -494,14 +494,13 @@
         }
       }
 
-      // Adicionar origem da busca
-      const origemLabel = origem === 'local' ? '📦 Base Local' : origem === 'cosmos' ? '🌐 Cosmos Online' : '💾 Cache';
-      infoHTML += `<p><b>Origem:</b> ${origemLabel}</p>`;
-
       // Adicionar imagem se existir
       let imagemHTML = '';
       if (produto.foto) {
-        imagemHTML = `<img src="/fotos/${produto.foto}" class="produto-imagem" alt="${produto.produto || produto.nome}" onclick="abrirImagemModal('/fotos/${produto.foto}')" onerror="this.style.display='none'">`;
+        console.log('📸 Foto do produto:', produto.foto);
+        imagemHTML = `<img src="/fotos/${produto.foto}" class="produto-imagem" alt="${produto.produto || produto.nome}" onclick="abrirImagemModal('/fotos/${produto.foto}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
+      } else {
+        console.log('⚠️ Nenhuma foto disponível para o produto');
       }
 
       resultado.innerHTML = `
@@ -533,7 +532,7 @@
 
       // Atualizar ultimaBusca ANTES da busca para evitar duplicatas em requisições rápidas
       ultimaBusca = codigo;
-      resultado.innerHTML = "<p style='margin-top: 20px;'>⏳ Buscando produto...</p>";
+      resultado.innerHTML = "<p style='margin-top: 20px;'>Buscando produto...</p>";
 
       try {
         const resp = await fetch(`/consulta/${codigo}`);

@@ -167,19 +167,26 @@ function buscarFoto(codigo) {
   try {
     const arquivos = fs.readdirSync(fotosDir);
     console.log(`🔍 Buscando foto para código ${codigo}...`);
+    console.log(`📁 Total de arquivos na pasta: ${arquivos.length}`);
 
-    // Procurar arquivo que comece com o código de barras (case-insensitive)
+    // Normalizar código para garantir comparação correta
+    const codigoNormalizado = normalizarCodigo(codigo).toLowerCase();
+    console.log(`🔢 Código normalizado: ${codigoNormalizado}`);
+
+    // Procurar arquivo que comece com o código de barras
     const foto = arquivos.find(arquivo => {
+      // Ignorar arquivos ocultos
+      if (arquivo.startsWith('.')) return false;
+
       const nomeArquivo = arquivo.toLowerCase();
-      const codigoLower = codigo.toLowerCase();
+      const extensoesValidas = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+      // Verificar se tem extensão válida
+      const temExtensaoValida = extensoesValidas.some(ext => nomeArquivo.endsWith(ext));
+      if (!temExtensaoValida) return false;
 
       // Aceitar formatos: codigo.ext ou codigo_*.ext
-      const match = nomeArquivo.startsWith(codigoLower) &&
-             (nomeArquivo.endsWith('.jpg') ||
-              nomeArquivo.endsWith('.jpeg') ||
-              nomeArquivo.endsWith('.png') ||
-              nomeArquivo.endsWith('.webp') ||
-              nomeArquivo.endsWith('.gif'));
+      const match = nomeArquivo.startsWith(codigoNormalizado);
 
       if (match) {
         console.log(`✅ Foto encontrada: ${arquivo}`);
@@ -189,8 +196,8 @@ function buscarFoto(codigo) {
     });
 
     if (!foto) {
-      console.log(`❌ Nenhuma foto encontrada para código ${codigo}`);
-      console.log(`   Arquivos disponíveis: ${arquivos.filter(a => !a.startsWith('.')).slice(0, 5).join(', ')}...`);
+      console.log(`❌ Nenhuma foto encontrada para código ${codigoNormalizado}`);
+      console.log(`   Primeiros arquivos na pasta: ${arquivos.filter(a => !a.startsWith('.')).slice(0, 10).join(', ')}`);
     }
 
     return foto || null;
