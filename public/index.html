@@ -167,6 +167,52 @@
       border-radius: 12px;
       margin: 15px auto;
       display: block;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .produto-imagem:hover {
+      transform: scale(1.02);
+    }
+
+    #image-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #image-modal.active {
+      display: flex;
+    }
+
+    #modal-image {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(102, 247, 204, 0.5);
+    }
+
+    #close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: white;
+      color: #333;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 2001;
     }
 
     @keyframes scan {
@@ -210,13 +256,39 @@
     <div class="scanner-line"></div>
   </div>
 
+  <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
+  <div id="image-modal">
+    <button id="close-modal">✕ Fechar</button>
+    <img id="modal-image" src="" alt="Produto">
+  </div>
+
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
     const videoContainer = document.getElementById("video-container");
     const video = document.getElementById("video");
+    const imageModal = document.getElementById("image-modal");
+    const modalImage = document.getElementById("modal-image");
     let codeReader = null;
     let stream = null;
+
+    // MODAL DE IMAGEM
+    function abrirImagemModal(src) {
+      modalImage.src = src;
+      imageModal.classList.add('active');
+    }
+
+    function fecharImagemModal() {
+      imageModal.classList.remove('active');
+      modalImage.src = '';
+    }
+
+    document.getElementById("close-modal").onclick = fecharImagemModal;
+    imageModal.onclick = (e) => {
+      if (e.target === imageModal) {
+        fecharImagemModal();
+      }
+    };
 
     // ENTER dispara busca
     input.addEventListener("keydown", (e) => {
@@ -240,7 +312,7 @@
       // Adicionar imagem se existir
       let imagemHTML = '';
       if (produto.foto) {
-        imagemHTML = `<img src="/fotos/${produto.foto}" class="produto-imagem" alt="${produto.produto || produto.nome}" onerror="this.style.display='none'">`;
+        imagemHTML = `<img src="/fotos/${produto.foto}" class="produto-imagem" alt="${produto.produto || produto.nome}" onclick="abrirImagemModal('/fotos/${produto.foto}')" onerror="this.style.display='none'">`;
       }
 
       resultado.innerHTML = `
