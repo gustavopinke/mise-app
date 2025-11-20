@@ -133,7 +133,12 @@ async function processDirectory(dirPath) {
 
     } catch (error) {
       stats.errors++;
-      console.error(`❌ [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] Erro ao fazer upload de ${file}:`, error.message);
+      console.error(`❌ [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] Erro ao fazer upload de ${file}:`);
+      console.error('Detalhes do erro:', error);
+      console.error('Nome do erro:', error.name);
+      console.error('Código:', error.$metadata?.httpStatusCode);
+      console.error('Request ID:', error.$metadata?.requestId);
+      console.error('\n');
     }
   }
 }
