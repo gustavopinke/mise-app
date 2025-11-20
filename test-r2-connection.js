@@ -21,6 +21,7 @@ const r2Client = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
+  forcePathStyle: true, // Importante para R2
 });
 
 async function testConnection() {

@@ -24,6 +24,7 @@ if (USE_R2) {
       accessKeyId: process.env.R2_ACCESS_KEY_ID,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     },
+    forcePathStyle: true, // Importante para R2
   });
   console.log('✅ Cliente R2 inicializado com sucesso');
 } else {
