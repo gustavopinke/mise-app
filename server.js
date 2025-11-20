@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import axios from "axios";
 import XLSX from "xlsx";
+import * as cheerio from "cheerio";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -130,85 +131,190 @@ function buscarFoto(codigo) {
   const fotosDir = path.join(projectRoot, "data", "fotos_produtos");
 
   if (!fs.existsSync(fotosDir)) {
+    console.log("⚠️ Diretório de fotos não existe:", fotosDir);
     return null;
   }
 
   try {
     const arquivos = fs.readdirSync(fotosDir);
+    console.log(`🔍 Buscando foto para código ${codigo}...`);
 
-    // Procurar arquivo que comece com o código de barras
+    // Procurar arquivo que comece com o código de barras (case-insensitive)
     const foto = arquivos.find(arquivo => {
       const nomeArquivo = arquivo.toLowerCase();
-      return nomeArquivo.startsWith(codigo) &&
+      const codigoLower = codigo.toLowerCase();
+
+      // Aceitar formatos: codigo.ext ou codigo_*.ext
+      const match = nomeArquivo.startsWith(codigoLower) &&
              (nomeArquivo.endsWith('.jpg') ||
               nomeArquivo.endsWith('.jpeg') ||
               nomeArquivo.endsWith('.png') ||
-              nomeArquivo.endsWith('.webp'));
+              nomeArquivo.endsWith('.webp') ||
+              nomeArquivo.endsWith('.gif'));
+
+      if (match) {
+        console.log(`✅ Foto encontrada: ${arquivo}`);
+      }
+
+      return match;
     });
+
+    if (!foto) {
+      console.log(`❌ Nenhuma foto encontrada para código ${codigo}`);
+      console.log(`   Arquivos disponíveis: ${arquivos.filter(a => !a.startsWith('.')).slice(0, 5).join(', ')}...`);
+    }
 
     return foto || null;
   } catch (err) {
-    console.error("Erro ao buscar foto:", err);
+    console.error("❌ Erro ao buscar foto:", err);
     return null;
   }
 }
 
 // -------------------------------------------
-// BUSCA ONLINE – COSMOS (Bluesoft)
+// LIMPAR NOME DO PRODUTO
 // -------------------------------------------
-async function buscarCosmos(codigo) {
-  try {
-    const url = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`;
-    console.log("🌐 URL Cosmos:", url);
+function limparNome(nome) {
+  if (!nome) return "";
+  nome = nome.trim();
 
-    const resposta = await axios.get(url, {
-      headers: {
-        "X-Cosmos-Token": "", // Token vazio funciona para busca pública
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "application/json"
-      },
-      timeout: 15000, // 15 segundos timeout
-      validateStatus: (status) => status < 500 // Aceitar 404, mas não 500+
-    });
-
-    console.log("📦 Resposta Cosmos status:", resposta.status);
-
-    if (resposta.status === 404) {
-      console.log("❌ Produto não existe no Cosmos (404)");
-      return null;
-    }
-
-    if (resposta.data) {
-      // Log completo do JSON para debug
-      console.log("📦 Dados Cosmos completos:", JSON.stringify(resposta.data, null, 2));
-
-      // Tentar diferentes campos de nome (ordem de prioridade)
-      const nome = resposta.data.description ||
-                   resposta.data.product_name ||
-                   resposta.data.brand_name ||
-                   resposta.data.name ||
-                   (resposta.data.gtin && resposta.data.gtin.description) ||
-                   null;
-
-      if (nome) {
-        console.log("✅ Nome encontrado no Cosmos:", nome);
-        return nome;
-      } else {
-        console.log("⚠️ Resposta do Cosmos não contém nome do produto");
-        console.log("   Chaves disponíveis:", Object.keys(resposta.data));
-      }
-    }
-  } catch (err) {
-    console.error("❌ Erro ao buscar no Cosmos:", err.message);
-    if (err.response) {
-      console.error("   Status:", err.response.status);
-      console.error("   Headers:", JSON.stringify(err.response.headers));
-      console.error("   Data:", JSON.stringify(err.response.data));
-    }
-    if (err.code) {
-      console.error("   Código de erro:", err.code);
+  // Remover tudo após separadores comuns
+  const separadores = [" | ", " - ", " — ", " – "];
+  for (const sep of separadores) {
+    if (nome.includes(sep)) {
+      nome = nome.split(sep)[0].trim();
     }
   }
+
+  return nome;
+}
+
+// -------------------------------------------
+// BUSCA ONLINE – COSMOS (Bluesoft) COM SCRAPING
+// -------------------------------------------
+async function buscarCosmos(codigo) {
+  // Lista de URLs para tentar (ordem de prioridade)
+  const urls = [
+    `https://cosmos.bluesoft.com.br/produtos/${codigo}`,
+    `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`
+  ];
+
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Referer": "https://cosmos.bluesoft.com.br/"
+  };
+
+  for (const url of urls) {
+    try {
+      console.log("🌐 Tentando URL Cosmos:", url);
+
+      const resposta = await axios.get(url, {
+        headers,
+        timeout: 20000,
+        validateStatus: (status) => status < 500,
+        maxRedirects: 5
+      });
+
+      console.log("📦 Resposta Cosmos status:", resposta.status);
+
+      if (resposta.status === 404) {
+        console.log("❌ Produto não encontrado nesta URL (404)");
+        continue;
+      }
+
+      if (resposta.status !== 200) {
+        console.log("⚠️ Status inesperado:", resposta.status);
+        continue;
+      }
+
+      // Se a resposta for JSON (da API)
+      if (resposta.headers['content-type']?.includes('application/json')) {
+        const data = resposta.data;
+        console.log("📦 Dados JSON recebidos");
+
+        const nome = data.description ||
+                     data.product_name ||
+                     data.brand_name ||
+                     data.name ||
+                     (data.gtin && data.gtin.description) ||
+                     null;
+
+        if (nome) {
+          const nomeLimpo = limparNome(nome);
+          console.log("✅ Nome encontrado (JSON):", nomeLimpo);
+          return nomeLimpo;
+        }
+      }
+
+      // Se a resposta for HTML (scraping)
+      if (resposta.headers['content-type']?.includes('text/html')) {
+        console.log("📄 Fazendo scraping do HTML...");
+
+        const $ = cheerio.load(resposta.data);
+        let nome = null;
+
+        // Método 1: span#product_description
+        const prodDesc = $('span#product_description').text().trim();
+        if (prodDesc) {
+          nome = limparNome(prodDesc);
+          console.log("✅ Nome encontrado (span#product_description):", nome);
+          return nome;
+        }
+
+        // Método 2: meta tag og:title
+        const ogTitle = $('meta[property="og:title"]').attr('content');
+        if (ogTitle) {
+          nome = limparNome(ogTitle);
+          console.log("✅ Nome encontrado (og:title):", nome);
+          return nome;
+        }
+
+        // Método 3: h1
+        const h1Text = $('h1').first().text().trim();
+        if (h1Text) {
+          nome = limparNome(h1Text);
+          console.log("✅ Nome encontrado (h1):", nome);
+          return nome;
+        }
+
+        // Método 4: buscar em qualquer elemento com classe ou id relacionado
+        const descricoes = [
+          $('.product-description').text().trim(),
+          $('.produto-nome').text().trim(),
+          $('#product-name').text().trim(),
+          $('.product-title').text().trim()
+        ];
+
+        for (const desc of descricoes) {
+          if (desc) {
+            nome = limparNome(desc);
+            console.log("✅ Nome encontrado (elemento genérico):", nome);
+            return nome;
+          }
+        }
+
+        console.log("⚠️ HTML recebido mas nenhum nome encontrado");
+      }
+
+    } catch (err) {
+      console.error("❌ Erro ao buscar em", url, ":", err.message);
+
+      if (err.response) {
+        console.error("   Status:", err.response.status);
+      }
+
+      if (err.code === 'ECONNABORTED') {
+        console.error("   Timeout da requisição");
+      }
+
+      // Continuar tentando próxima URL
+      continue;
+    }
+  }
+
+  console.log("❌ Produto não encontrado em nenhuma URL do Cosmos");
   return null;
 }
 

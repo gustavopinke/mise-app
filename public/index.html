@@ -17,7 +17,9 @@
       background: #66F7CC;
       display: flex;
       justify-content: center;
-      padding: 20px;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px 20px 40px 20px;
     }
 
     .container {
@@ -25,22 +27,28 @@
       max-width: 420px;
       background: white;
       border-radius: 20px;
-      padding: 25px;
-      box-shadow: 0px 0px 18px rgba(0, 0, 0, 0.15);
+      padding: 0;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
       text-align: center;
+      overflow: hidden;
     }
 
     .logo-container {
       background: #66F7CC;
-      padding: 15px;
-      border-radius: 15px;
-      margin: 0 auto 15px;
-      width: fit-content;
+      padding: 25px 15px;
+      margin: 0;
+      width: 100%;
     }
 
     .logo {
       width: 150px;
       display: block;
+      margin: 0 auto;
+      filter: brightness(0);
+    }
+
+    .form-content {
+      padding: 25px;
     }
 
     h2 {
@@ -69,24 +77,42 @@
 
     button {
       width: 100%;
-      padding: 12px;
-      font-size: 18px;
+      padding: 14px;
+      font-size: 16px;
       margin-top: 15px;
       border-radius: 10px;
       border: none;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
     }
 
     #buscar {
       background: #66F7CC;
       color: #222;
-      font-weight: 600;
     }
 
     #scanner {
       background: #6a5acd;
       color: white;
+    }
+
+    button svg {
+      width: 20px;
+      height: 20px;
     }
 
     .produto-card {
@@ -130,10 +156,21 @@
       display: flex;
     }
 
-    #video {
+    .camera-wrapper {
+      position: relative;
       width: 90%;
       max-width: 500px;
+      aspect-ratio: 4/3;
       border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(102, 247, 204, 0.3);
+    }
+
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     #close-camera {
@@ -143,21 +180,41 @@
       background: white;
       color: #333;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      z-index: 1001;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .scanner-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      max-width: 350px;
+      aspect-ratio: 3/2;
+      border: 3px solid #66F7CC;
+      border-radius: 10px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
     }
 
     .scanner-line {
       position: absolute;
-      width: 80%;
-      max-width: 400px;
-      height: 2px;
-      background: #66F7CC;
-      box-shadow: 0 0 10px #66F7CC;
-      animation: scan 2s linear infinite;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 76%;
+      max-width: 330px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #66F7CC, transparent);
+      box-shadow: 0 0 15px #66F7CC, 0 0 30px #66F7CC;
+      animation: scan 2s ease-in-out infinite;
+      pointer-events: none;
     }
 
     .produto-imagem {
@@ -216,8 +273,27 @@
     }
 
     @keyframes scan {
-      0%, 100% { transform: translateY(-150px); }
-      50% { transform: translateY(150px); }
+      0%, 100% {
+        transform: translate(-50%, -50%) translateY(-100px);
+        opacity: 0.3;
+      }
+      50% {
+        transform: translate(-50%, -50%) translateY(100px);
+        opacity: 1;
+      }
+    }
+
+    .scan-status {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
     }
 
   </style>
@@ -232,28 +308,47 @@
       <img src="logo-mise.png" class="logo" />
     </div>
 
-    <h2>Scanner de Códigos de Barras</h2>
+    <div class="form-content">
+      <h2>Scanner de Códigos de Barras</h2>
 
-    <!-- INPUT COM TYPE TEXT PARA EVITAR SETAS -->
-    <input
-        id="codigo"
-        type="text"
-        placeholder="Digite ou escaneie o código"
-        inputmode="numeric"
-        pattern="[0-9]*"
-    />
+      <!-- INPUT COM TYPE TEXT PARA EVITAR SETAS -->
+      <input
+          id="codigo"
+          type="text"
+          placeholder="Digite ou escaneie o código"
+          inputmode="numeric"
+          pattern="[0-9]*"
+      />
 
-    <button id="buscar">🔍 Buscar Produto</button>
-    <button id="scanner">📷 Scanner</button>
+      <button id="buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        Buscar Produto
+      </button>
 
-    <div id="resultado"></div>
+      <button id="scanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        Scanner
+      </button>
+
+      <div id="resultado"></div>
+    </div>
   </div>
 
   <!-- CONTAINER DA CÂMERA -->
   <div id="video-container">
     <button id="close-camera">✕ Fechar</button>
-    <video id="video"></video>
-    <div class="scanner-line"></div>
+    <div class="camera-wrapper">
+      <video id="video" playsinline></video>
+      <div class="scanner-frame"></div>
+      <div class="scanner-line"></div>
+      <div class="scan-status">Posicione o código de barras no centro</div>
+    </div>
   </div>
 
   <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
@@ -269,8 +364,11 @@
     const video = document.getElementById("video");
     const imageModal = document.getElementById("image-modal");
     const modalImage = document.getElementById("modal-image");
+    const scanStatus = document.querySelector(".scan-status");
     let codeReader = null;
     let stream = null;
+    let ultimaBusca = "";
+    let buscaTimeout = null;
 
     // MODAL DE IMAGEM
     function abrirImagemModal(src) {
@@ -292,7 +390,24 @@
 
     // ENTER dispara busca
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") buscar();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        buscar();
+      }
+    });
+
+    // Auto-busca quando digitar código completo (debounce)
+    input.addEventListener("input", (e) => {
+      const codigo = e.target.value.replace(/\D/g, "");
+
+      if (buscaTimeout) clearTimeout(buscaTimeout);
+
+      // Auto-busca se tiver 8+ dígitos (código de barras comum)
+      if (codigo.length >= 8 && codigo.length <= 14) {
+        buscaTimeout = setTimeout(() => {
+          buscar();
+        }, 800);
+      }
     });
 
     document.getElementById("buscar").onclick = buscar;
@@ -331,58 +446,119 @@
       const codigo = input.value.replace(/\D/g, "");
 
       if (!codigo) {
-        resultado.innerHTML = "<p>Digite um código válido.</p>";
+        resultado.innerHTML = "<p style='color: #999; margin-top: 20px;'>Digite um código válido.</p>";
         return;
       }
 
-      resultado.innerHTML = "<p>⏳ Buscando...</p>";
-
-      const resp = await fetch(`/consulta/${codigo}`);
-      const data = await resp.json();
-
-      if (!data.ok) {
-        resultado.innerHTML = "<p>❌ Produto não encontrado.</p>";
+      // Evitar buscas duplicadas
+      if (codigo === ultimaBusca) {
         return;
       }
 
-      mostrarProduto(data.produto, data.origem);
+      ultimaBusca = codigo;
+      resultado.innerHTML = "<p style='margin-top: 20px;'>⏳ Buscando produto...</p>";
+
+      try {
+        const resp = await fetch(`/consulta/${codigo}`);
+        const data = await resp.json();
+
+        if (!data.ok) {
+          resultado.innerHTML = `
+            <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 10px; color: #c62828;">
+              <strong>❌ Produto não encontrado</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">Código: ${codigo}</p>
+            </div>
+          `;
+          return;
+        }
+
+        mostrarProduto(data.produto, data.origem);
+      } catch (error) {
+        resultado.innerHTML = `
+          <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; color: #e65100;">
+            <strong>⚠️ Erro de conexão</strong>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">Verifique sua internet e tente novamente.</p>
+          </div>
+        `;
+      }
     }
 
     // SCANNER DE CÂMERA
     document.getElementById("scanner").onclick = async () => {
       try {
         videoContainer.classList.add('active');
+        scanStatus.textContent = "Iniciando câmera...";
 
         codeReader = new ZXing.BrowserBarcodeReader();
 
         const constraints = {
           video: {
             facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
           }
         };
 
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
-        video.play();
 
+        // Aguardar o vídeo carregar antes de iniciar
+        await video.play();
+
+        scanStatus.textContent = "Posicione o código de barras no centro";
+
+        // Decodificar código de barras
         codeReader.decodeFromVideoDevice(null, video, (result, err) => {
           if (result) {
+            // Som de sucesso (opcional, pode ser removido se não quiser)
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              oscillator.frequency.value = 800;
+              oscillator.type = 'sine';
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+              // Ignorar erro de som
+            }
+
             input.value = result.text;
-            fecharCamera();
-            buscar();
+            scanStatus.textContent = "✓ Código detectado!";
+
+            setTimeout(() => {
+              fecharCamera();
+              buscar();
+            }, 500);
           }
         });
 
       } catch (err) {
         console.error('Erro ao acessar câmera:', err);
-        alert('Não foi possível acessar a câmera. Verifique as permissões.');
+
+        let mensagem = 'Não foi possível acessar a câmera.';
+        if (err.name === 'NotAllowedError') {
+          mensagem = 'Permissão de câmera negada. Por favor, permita o acesso nas configurações do navegador.';
+        } else if (err.name === 'NotFoundError') {
+          mensagem = 'Nenhuma câmera encontrada no dispositivo.';
+        }
+
+        alert(mensagem);
         fecharCamera();
       }
     };
 
     document.getElementById("close-camera").onclick = fecharCamera;
+
+    // Fechar câmera ao pressionar ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && videoContainer.classList.contains('active')) {
+        fecharCamera();
+      }
+    });
 
     function fecharCamera() {
       if (stream) {
@@ -391,8 +567,11 @@
       }
       if (codeReader) {
         codeReader.reset();
+        codeReader = null;
       }
+      video.srcObject = null;
       videoContainer.classList.remove('active');
+      scanStatus.textContent = "Posicione o código de barras no centro";
     }
 
   </script>
