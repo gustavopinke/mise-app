@@ -1017,6 +1017,7 @@
         }
         pesoInput.value = '';
         ultimoPesoRecebido = 0;
+        // Resetar variáveis de estabilização (serão definidas depois)
       }
     });
 
@@ -1120,6 +1121,8 @@
           bluetoothStatus.style.color = '#f44336';
           pesoInput.value = '';
           ultimoPesoRecebido = 0;
+          pesoEstavel = 0;
+          pesoConfirmado = false;
           if (pollingInterval) {
             clearInterval(pollingInterval);
             pollingInterval = null;
@@ -1151,110 +1154,122 @@
       }
     });
 
+    // Variáveis para estabilização do peso
+    let pesoEstavel = 0;
+    let tempoInicioEstabilizacao = 0;
+    let pesoConfirmado = false;
+    const TEMPO_ESTABILIZACAO = 2000; // 2 segundos
+    const TOLERANCIA_PESO = 0.005; // 5 gramas de tolerância
+    const PESO_MAXIMO = 10; // 10kg máximo (balança de cozinha)
+
     // Processar dados de peso da balança
     function handleWeightData(event) {
       const value = event.target.value;
       const data = new Uint8Array(value.buffer);
 
-      // Debug: mostrar dados brutos recebidos
+      // Debug apenas no console
       const hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
-      console.log('📊 Dados da balança (hex):', hexString);
-      console.log('📊 Dados da balança (dec):', Array.from(data).join(' '));
-      console.log('📊 Tamanho:', data.length, 'bytes');
+      console.log('📊 Dados da balança:', hexString);
 
       let peso = 0;
       let pesoEncontrado = false;
 
-      // Método 1: Formato Electrolux/balanças de cozinha (comum)
-      // Dados geralmente vêm como: [flags, peso_low, peso_high, ...]
-      if (data.length >= 3 && !pesoEncontrado) {
-        // Pular primeiro byte (flags) e ler peso como little-endian
-        const pesoGramas = (data[2] << 8) | data[1];
-        if (pesoGramas > 0 && pesoGramas < 50000) {
-          peso = pesoGramas / 1000;
-          pesoEncontrado = true;
-          console.log('✅ Método 1 (Electrolux): ', peso, 'kg');
-        }
-      }
-
-      // Método 2: Peso direto em 2 bytes (little-endian, gramas)
+      // Método 1: Peso direto em gramas (2 bytes, little-endian) - mais comum
       if (data.length >= 2 && !pesoEncontrado) {
         const pesoGramas = (data[1] << 8) | data[0];
-        if (pesoGramas > 0 && pesoGramas < 50000) {
+        if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
           peso = pesoGramas / 1000;
           pesoEncontrado = true;
-          console.log('✅ Método 2 (2 bytes LE): ', peso, 'kg');
         }
       }
 
-      // Método 3: Peso em 2 bytes (big-endian, gramas)
+      // Método 2: Peso com flag no primeiro byte
+      if (data.length >= 3 && !pesoEncontrado) {
+        const pesoGramas = (data[2] << 8) | data[1];
+        if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+        }
+      }
+
+      // Método 3: Big-endian
       if (data.length >= 2 && !pesoEncontrado) {
         const pesoGramas = (data[0] << 8) | data[1];
-        if (pesoGramas > 0 && pesoGramas < 50000) {
+        if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
           peso = pesoGramas / 1000;
           pesoEncontrado = true;
-          console.log('✅ Método 3 (2 bytes BE): ', peso, 'kg');
         }
       }
 
-      // Método 4: Peso em 4 bytes (little-endian, centésimos de grama)
-      if (data.length >= 4 && !pesoEncontrado) {
-        const pesoRaw = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
-        if (pesoRaw > 0 && pesoRaw < 5000000) {
-          peso = pesoRaw / 100000;
-          pesoEncontrado = true;
-          console.log('✅ Método 4 (4 bytes): ', peso, 'kg');
-        }
-      }
-
-      // Método 5: Texto ASCII (algumas balanças enviam como string)
+      // Método 4: Texto ASCII
       if (!pesoEncontrado) {
         try {
           const texto = new TextDecoder().decode(data);
           const match = texto.match(/(\d+[.,]?\d*)/);
           if (match) {
-            peso = parseFloat(match[1].replace(',', '.'));
-            if (peso > 0 && peso < 50) {
+            const pesoTexto = parseFloat(match[1].replace(',', '.'));
+            if (pesoTexto > 0 && pesoTexto <= PESO_MAXIMO) {
+              peso = pesoTexto;
               pesoEncontrado = true;
-              console.log('✅ Método 5 (ASCII): ', peso, 'kg');
             }
           }
         } catch (e) {}
       }
 
-      // Método 6: Procurar peso em qualquer posição dos dados
-      if (!pesoEncontrado && data.length >= 2) {
-        for (let i = 0; i < data.length - 1; i++) {
-          const pesoGramas = (data[i + 1] << 8) | data[i];
-          // Peso válido entre 1g e 10kg (faixa típica de balança de cozinha)
-          if (pesoGramas >= 1 && pesoGramas <= 10000) {
-            peso = pesoGramas / 1000;
-            pesoEncontrado = true;
-            console.log('✅ Método 6 (scan): posição', i, '-', peso, 'kg');
-            break;
-          }
-        }
-      }
-
       // Atualizar campo se peso válido encontrado
-      if (pesoEncontrado && peso > 0 && peso < 50) {
-        // Só atualizar se o peso mudou significativamente (mais de 1g de diferença)
-        if (Math.abs(peso - ultimoPesoRecebido) > 0.001) {
-          ultimoPesoRecebido = peso;
-          pesoInput.value = peso.toFixed(3);
-          bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg`;
-          bluetoothStatus.style.color = '#4CAF50';
-          atualizarBotaoSalvar();
-        }
-      } else {
-        // Só mostrar mensagem de debug no máximo a cada 3 segundos para não ficar piscando
+      if (pesoEncontrado && peso > 0 && peso <= PESO_MAXIMO) {
         const agora = Date.now();
-        if (agora - ultimaAtualizacaoStatus > 3000) {
-          ultimaAtualizacaoStatus = agora;
-          console.log('⚠️ Peso não identificado nos dados');
-          // Não mostrar dados brutos na tela para evitar piscar - só no console
+
+        // Verificar se peso está estável (dentro da tolerância)
+        if (Math.abs(peso - pesoEstavel) <= TOLERANCIA_PESO) {
+          // Peso estável - verificar tempo
+          const tempoEstavel = agora - tempoInicioEstabilizacao;
+
+          if (tempoEstavel >= TEMPO_ESTABILIZACAO && !pesoConfirmado) {
+            // Peso estável por 2 segundos - CONFIRMAR!
+            pesoConfirmado = true;
+            pesoInput.value = peso.toFixed(3);
+            bluetoothStatus.innerHTML = `<strong>Peso confirmado: ${peso.toFixed(3)} kg</strong>`;
+            bluetoothStatus.style.color = '#4CAF50';
+            atualizarBotaoSalvar();
+
+            // Feedback visual e sonoro
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              oscillator.frequency.value = 800;
+              oscillator.type = 'sine';
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (e) {}
+
+            if (navigator.vibrate) navigator.vibrate(200);
+
+          } else if (!pesoConfirmado) {
+            // Ainda estabilizando - mostrar progresso
+            const progresso = Math.min(100, (tempoEstavel / TEMPO_ESTABILIZACAO) * 100);
+            pesoInput.value = peso.toFixed(3);
+            bluetoothStatus.textContent = `Estabilizando... ${progresso.toFixed(0)}%`;
+            bluetoothStatus.style.color = '#FF9800';
+          }
+        } else {
+          // Peso mudou - resetar estabilização
+          pesoEstavel = peso;
+          tempoInicioEstabilizacao = agora;
+          pesoConfirmado = false;
+          pesoInput.value = peso.toFixed(3);
+          bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+          bluetoothStatus.style.color = '#666';
         }
+
+        ultimoPesoRecebido = peso;
       }
+      // Não mostrar nada na tela se não encontrar peso válido
     }
 
     // ========================================
