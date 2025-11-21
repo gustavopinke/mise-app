@@ -271,7 +271,8 @@ async function buscarCosmos(codigo) {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Referer": "https://cosmos.bluesoft.com.br/"
+    "Referer": "https://cosmos.bluesoft.com.br/",
+    "Cache-Control": "no-cache"
   };
 
   for (const url of urls) {
@@ -280,12 +281,13 @@ async function buscarCosmos(codigo) {
 
       const resposta = await axios.get(url, {
         headers,
-        timeout: 30000, // Aumentado para 30 segundos
+        timeout: 30000,
         validateStatus: (status) => status < 500,
         maxRedirects: 5
       });
 
       console.log("📊 Status da resposta:", resposta.status);
+      console.log("📄 Content-Type:", resposta.headers['content-type']);
 
       if (resposta.status === 404) {
         console.log("❌ Produto não encontrado nesta URL (404)");
@@ -300,7 +302,7 @@ async function buscarCosmos(codigo) {
       // Se a resposta for JSON (da API)
       if (resposta.headers['content-type']?.includes('application/json')) {
         const data = resposta.data;
-        console.log("📦 Dados JSON recebidos");
+        console.log("📦 Dados JSON recebidos:", JSON.stringify(data).substring(0, 500));
 
         const nome = data.description ||
                      data.product_name ||
@@ -312,42 +314,63 @@ async function buscarCosmos(codigo) {
         if (nome) {
           const nomeLimpo = limparNome(nome);
           console.log("✅ Nome encontrado (JSON):", nomeLimpo);
-          return nomeLimpo;
+          return { nome: nomeLimpo, codigo: codigo };
         }
       }
 
       // Se a resposta for HTML (scraping)
       if (resposta.headers['content-type']?.includes('text/html')) {
         console.log("📄 Fazendo scraping do HTML...");
+        console.log("📄 Tamanho do HTML:", resposta.data.length, "bytes");
 
         const $ = cheerio.load(resposta.data);
         let nome = null;
 
-        // Método 1: span#product_description
+        // Método 1: span#product_description (seletor principal do Cosmos)
         const prodDesc = $('span#product_description').text().trim();
         if (prodDesc) {
           nome = limparNome(prodDesc);
           console.log("✅ Nome encontrado (span#product_description):", nome);
-          return nome;
+          return { nome: nome, codigo: codigo };
         }
 
-        // Método 2: meta tag og:title
+        // Método 2: h1.product-name ou similar
+        const h1Product = $('h1.product-name, h1.product-title, .product-name h1').text().trim();
+        if (h1Product) {
+          nome = limparNome(h1Product);
+          console.log("✅ Nome encontrado (h1.product):", nome);
+          return { nome: nome, codigo: codigo };
+        }
+
+        // Método 3: meta tag og:title
         const ogTitle = $('meta[property="og:title"]').attr('content');
-        if (ogTitle) {
+        if (ogTitle && !ogTitle.includes('Cosmos') && ogTitle.length > 5) {
           nome = limparNome(ogTitle);
           console.log("✅ Nome encontrado (og:title):", nome);
-          return nome;
+          return { nome: nome, codigo: codigo };
         }
 
-        // Método 3: h1
+        // Método 4: h1 genérico
         const h1Text = $('h1').first().text().trim();
-        if (h1Text) {
+        if (h1Text && h1Text.length > 5 && !h1Text.includes('Cosmos')) {
           nome = limparNome(h1Text);
           console.log("✅ Nome encontrado (h1):", nome);
-          return nome;
+          return { nome: nome, codigo: codigo };
         }
 
-        // Método 4: buscar em qualquer elemento com classe ou id relacionado
+        // Método 5: title da página (menos preferível)
+        const titleText = $('title').text().trim();
+        if (titleText && titleText.length > 10) {
+          // Remover "- Cosmos" ou similar do título
+          let titleLimpo = titleText.replace(/\s*[-|]\s*Cosmos.*$/i, '').trim();
+          if (titleLimpo.length > 5) {
+            nome = limparNome(titleLimpo);
+            console.log("✅ Nome encontrado (title):", nome);
+            return { nome: nome, codigo: codigo };
+          }
+        }
+
+        // Método 6: buscar em qualquer elemento com classe ou id relacionado
         const descricoes = [
           $('.product-description').text().trim(),
           $('.produto-nome').text().trim(),
@@ -357,43 +380,24 @@ async function buscarCosmos(codigo) {
           $('.card-title').text().trim(),
           $('.product-info h1').text().trim(),
           $('.product-info h2').text().trim(),
-          $('meta[name="description"]').attr('content'),
-          $('title').text().trim()
+          $('meta[name="description"]').attr('content')
         ];
 
         for (const desc of descricoes) {
-          if (desc) {
+          if (desc && desc.length > 5 && !desc.includes('Cosmos')) {
             nome = limparNome(desc);
             console.log("✅ Nome encontrado (elemento genérico):", nome);
-            return nome;
+            return { nome: nome, codigo: codigo };
           }
         }
 
-        console.log("⚠️ HTML recebido mas nenhum nome encontrado");
-        console.log("⚠️ Tentando buscar qualquer texto em elementos principais...");
+        console.log("⚠️ HTML recebido mas nenhum nome encontrado pelos métodos padrão");
 
-        // Método 5: Buscar em divs ou sections com conteúdo relevante
-        const textosEncontrados = [];
-        $('div, section, article').each((i, elem) => {
-          const texto = $(elem).text().trim();
-          if (texto.length > 10 && texto.length < 200) {
-            textosEncontrados.push(texto);
-          }
-        });
-
-        if (textosEncontrados.length > 0) {
-          console.log(`⚠️ Encontrados ${textosEncontrados.length} textos no HTML, usando o primeiro relevante`);
-          // Usar o primeiro texto que pareça ser um nome de produto
-          for (const texto of textosEncontrados) {
-            if (texto && !texto.includes('Cookie') && !texto.includes('Login') && !texto.includes('Cadastr')) {
-              nome = limparNome(texto);
-              console.log("✅ Nome encontrado (busca genérica):", nome);
-              return nome;
-            }
-          }
-        }
-
-        console.log("❌ Nenhum nome de produto encontrado no HTML");
+        // Log de debug para ver o que tem no HTML
+        console.log("🔍 Debug - Procurando elementos no HTML...");
+        console.log("   - span#product_description existe?", $('span#product_description').length > 0);
+        console.log("   - h1 existe?", $('h1').length > 0);
+        console.log("   - title:", $('title').text().substring(0, 100));
       }
 
     } catch (err) {
@@ -402,18 +406,14 @@ async function buscarCosmos(codigo) {
 
       if (err.response) {
         console.error("   Status HTTP:", err.response.status);
-        console.error("   Headers:", err.response.headers);
       }
 
       if (err.code === 'ECONNABORTED') {
         console.error("   ⏱️ TIMEOUT da requisição (30s)");
       } else if (err.code === 'ENOTFOUND') {
         console.error("   🌐 Servidor não encontrado / Sem internet");
-      } else {
-        console.error("   Código de erro:", err.code);
       }
 
-      // Continuar tentando próxima URL
       console.log("   ⏭️ Tentando próxima URL...");
       continue;
     }
@@ -546,8 +546,9 @@ app.get("/consulta/:codigo", async (req, res) => {
   // 3ª BUSCA ONLINE (Cosmos)
   console.log("🌐 Buscando no Cosmos...");
   try {
-    const nomeOnline = await buscarCosmos(codigo);
-    if (nomeOnline) {
+    const resultadoCosmos = await buscarCosmos(codigo);
+    if (resultadoCosmos && resultadoCosmos.nome) {
+      const nomeOnline = resultadoCosmos.nome;
       console.log("✅ Encontrado no Cosmos:", nomeOnline);
       salvarProduto(codigo, nomeOnline);
 
