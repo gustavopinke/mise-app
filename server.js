@@ -253,175 +253,170 @@ function limparNome(nome) {
 }
 
 // -------------------------------------------
-// BUSCA ONLINE – COSMOS (Bluesoft) COM SCRAPING
+// BUSCA ONLINE – Open Food Facts + Cosmos
 // -------------------------------------------
 async function buscarCosmos(codigo) {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🌐 INICIANDO BUSCA NO COSMOS");
+  console.log("🌐 INICIANDO BUSCA ONLINE");
   console.log(`📋 Código: ${codigo}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // Lista de URLs para tentar (ordem de prioridade)
-  const urls = [
-    `https://cosmos.bluesoft.com.br/produtos/${codigo}`,
-    `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`
-  ];
+  // 1. TENTAR OPEN FOOD FACTS (API gratuita e aberta)
+  try {
+    console.log("\n🥫 Tentando Open Food Facts...");
+    const urlOFF = `https://world.openfoodfacts.org/api/v2/product/${codigo}.json`;
 
-  const headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Referer": "https://cosmos.bluesoft.com.br/",
-    "Cache-Control": "no-cache"
-  };
+    const respostaOFF = await axios.get(urlOFF, {
+      timeout: 15000,
+      headers: {
+        "User-Agent": "MISE-App/1.0 (https://app.mise.ws)"
+      }
+    });
 
-  for (const url of urls) {
+    if (respostaOFF.data && respostaOFF.data.status === 1 && respostaOFF.data.product) {
+      const produto = respostaOFF.data.product;
+      const nome = produto.product_name_pt ||
+                   produto.product_name_pt_br ||
+                   produto.product_name ||
+                   produto.generic_name_pt ||
+                   produto.generic_name ||
+                   null;
+
+      if (nome && nome.length > 2) {
+        const nomeLimpo = limparNome(nome);
+        console.log("✅ Open Food Facts:", nomeLimpo);
+        return { nome: nomeLimpo, codigo: codigo, origem: "openfoodfacts" };
+      }
+    }
+    console.log("⚠️ Open Food Facts: produto não encontrado ou sem nome");
+  } catch (errOFF) {
+    console.log("⚠️ Open Food Facts erro:", errOFF.message);
+  }
+
+  // 2. TENTAR COSMOS (com API token se disponível)
+  const cosmosToken = process.env.COSMOS_API_TOKEN;
+
+  if (cosmosToken) {
     try {
-      console.log(`\n🔗 Tentando URL [${urls.indexOf(url) + 1}/${urls.length}]:`, url);
+      console.log("\n🔷 Tentando API Cosmos (com token)...");
+      const urlAPI = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`;
 
-      const resposta = await axios.get(url, {
-        headers,
-        timeout: 30000,
-        validateStatus: (status) => status < 500,
-        maxRedirects: 5
+      const respostaAPI = await axios.get(urlAPI, {
+        timeout: 15000,
+        headers: {
+          "X-Cosmos-Token": cosmosToken,
+          "User-Agent": "MISE-App/1.0"
+        }
       });
 
-      console.log("📊 Status da resposta:", resposta.status);
-      console.log("📄 Content-Type:", resposta.headers['content-type']);
-
-      if (resposta.status === 404) {
-        console.log("❌ Produto não encontrado nesta URL (404)");
-        continue;
-      }
-
-      if (resposta.status !== 200) {
-        console.log("⚠️ Status inesperado:", resposta.status);
-        continue;
-      }
-
-      // Se a resposta for JSON (da API)
-      if (resposta.headers['content-type']?.includes('application/json')) {
-        const data = resposta.data;
-        console.log("📦 Dados JSON recebidos:", JSON.stringify(data).substring(0, 500));
-
-        const nome = data.description ||
-                     data.product_name ||
-                     data.brand_name ||
-                     data.name ||
-                     (data.gtin && data.gtin.description) ||
-                     null;
+      if (respostaAPI.data) {
+        const nome = respostaAPI.data.description ||
+                     respostaAPI.data.product_name ||
+                     respostaAPI.data.name;
 
         if (nome) {
           const nomeLimpo = limparNome(nome);
-          console.log("✅ Nome encontrado (JSON):", nomeLimpo);
-          return { nome: nomeLimpo, codigo: codigo };
+          console.log("✅ Cosmos API:", nomeLimpo);
+          return { nome: nomeLimpo, codigo: codigo, origem: "cosmos" };
         }
       }
-
-      // Se a resposta for HTML (scraping)
-      if (resposta.headers['content-type']?.includes('text/html')) {
-        console.log("📄 Fazendo scraping do HTML...");
-        console.log("📄 Tamanho do HTML:", resposta.data.length, "bytes");
-
-        const $ = cheerio.load(resposta.data);
-        let nome = null;
-
-        // Método 1: span#product_description (seletor principal do Cosmos)
-        const prodDesc = $('span#product_description').text().trim();
-        if (prodDesc) {
-          nome = limparNome(prodDesc);
-          console.log("✅ Nome encontrado (span#product_description):", nome);
-          return { nome: nome, codigo: codigo };
-        }
-
-        // Método 2: h1.product-name ou similar
-        const h1Product = $('h1.product-name, h1.product-title, .product-name h1').text().trim();
-        if (h1Product) {
-          nome = limparNome(h1Product);
-          console.log("✅ Nome encontrado (h1.product):", nome);
-          return { nome: nome, codigo: codigo };
-        }
-
-        // Método 3: meta tag og:title
-        const ogTitle = $('meta[property="og:title"]').attr('content');
-        if (ogTitle && !ogTitle.includes('Cosmos') && ogTitle.length > 5) {
-          nome = limparNome(ogTitle);
-          console.log("✅ Nome encontrado (og:title):", nome);
-          return { nome: nome, codigo: codigo };
-        }
-
-        // Método 4: h1 genérico
-        const h1Text = $('h1').first().text().trim();
-        if (h1Text && h1Text.length > 5 && !h1Text.includes('Cosmos')) {
-          nome = limparNome(h1Text);
-          console.log("✅ Nome encontrado (h1):", nome);
-          return { nome: nome, codigo: codigo };
-        }
-
-        // Método 5: title da página (menos preferível)
-        const titleText = $('title').text().trim();
-        if (titleText && titleText.length > 10) {
-          // Remover "- Cosmos" ou similar do título
-          let titleLimpo = titleText.replace(/\s*[-|]\s*Cosmos.*$/i, '').trim();
-          if (titleLimpo.length > 5) {
-            nome = limparNome(titleLimpo);
-            console.log("✅ Nome encontrado (title):", nome);
-            return { nome: nome, codigo: codigo };
-          }
-        }
-
-        // Método 6: buscar em qualquer elemento com classe ou id relacionado
-        const descricoes = [
-          $('.product-description').text().trim(),
-          $('.produto-nome').text().trim(),
-          $('#product-name').text().trim(),
-          $('.product-title').text().trim(),
-          $('[itemprop="name"]').text().trim(),
-          $('.card-title').text().trim(),
-          $('.product-info h1').text().trim(),
-          $('.product-info h2').text().trim(),
-          $('meta[name="description"]').attr('content')
-        ];
-
-        for (const desc of descricoes) {
-          if (desc && desc.length > 5 && !desc.includes('Cosmos')) {
-            nome = limparNome(desc);
-            console.log("✅ Nome encontrado (elemento genérico):", nome);
-            return { nome: nome, codigo: codigo };
-          }
-        }
-
-        console.log("⚠️ HTML recebido mas nenhum nome encontrado pelos métodos padrão");
-
-        // Log de debug para ver o que tem no HTML
-        console.log("🔍 Debug - Procurando elementos no HTML...");
-        console.log("   - span#product_description existe?", $('span#product_description').length > 0);
-        console.log("   - h1 existe?", $('h1').length > 0);
-        console.log("   - title:", $('title').text().substring(0, 100));
-      }
-
-    } catch (err) {
-      console.error(`\n❌ ERRO ao buscar em ${url}`);
-      console.error("   Mensagem:", err.message);
-
-      if (err.response) {
-        console.error("   Status HTTP:", err.response.status);
-      }
-
-      if (err.code === 'ECONNABORTED') {
-        console.error("   ⏱️ TIMEOUT da requisição (30s)");
-      } else if (err.code === 'ENOTFOUND') {
-        console.error("   🌐 Servidor não encontrado / Sem internet");
-      }
-
-      console.log("   ⏭️ Tentando próxima URL...");
-      continue;
+    } catch (errAPI) {
+      console.log("⚠️ Cosmos API erro:", errAPI.message);
     }
   }
 
+  // 3. TENTAR SCRAPING DO COSMOS (fallback)
+  try {
+    console.log("\n🔍 Tentando scraping Cosmos...");
+    const urlScrape = `https://cosmos.bluesoft.com.br/produtos/${codigo}`;
+
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Cache-Control": "max-age=0"
+    };
+
+    const resposta = await axios.get(urlScrape, {
+      headers,
+      timeout: 20000,
+      validateStatus: (status) => status < 500,
+      maxRedirects: 5
+    });
+
+    if (resposta.status === 200 && resposta.headers['content-type']?.includes('text/html')) {
+      const $ = cheerio.load(resposta.data);
+
+      // Tentar extrair nome
+      const seletores = [
+        'span#product_description',
+        'h1.product-name',
+        'h1.product-title',
+        '.product-name h1',
+        '[itemprop="name"]',
+        'h1'
+      ];
+
+      for (const seletor of seletores) {
+        const texto = $(seletor).first().text().trim();
+        if (texto && texto.length > 5 && !texto.toLowerCase().includes('cosmos') && !texto.toLowerCase().includes('bluesoft')) {
+          const nomeLimpo = limparNome(texto);
+          console.log(`✅ Cosmos scraping (${seletor}):`, nomeLimpo);
+          return { nome: nomeLimpo, codigo: codigo, origem: "cosmos-scrape" };
+        }
+      }
+
+      // Tentar og:title
+      const ogTitle = $('meta[property="og:title"]').attr('content');
+      if (ogTitle && ogTitle.length > 5 && !ogTitle.toLowerCase().includes('cosmos')) {
+        const nomeLimpo = limparNome(ogTitle);
+        console.log("✅ Cosmos scraping (og:title):", nomeLimpo);
+        return { nome: nomeLimpo, codigo: codigo, origem: "cosmos-scrape" };
+      }
+    } else if (resposta.status === 403) {
+      console.log("⚠️ Cosmos bloqueou acesso (403) - site requer autenticação");
+    } else if (resposta.status === 404) {
+      console.log("⚠️ Produto não existe no Cosmos (404)");
+    }
+  } catch (errScrape) {
+    console.log("⚠️ Cosmos scraping erro:", errScrape.message);
+  }
+
+  // 4. TENTAR UPC DATABASE (alternativa internacional)
+  try {
+    console.log("\n🌍 Tentando UPC Database...");
+    const urlUPC = `https://api.upcitemdb.com/prod/trial/lookup?upc=${codigo}`;
+
+    const respostaUPC = await axios.get(urlUPC, {
+      timeout: 10000,
+      headers: {
+        "User-Agent": "MISE-App/1.0"
+      }
+    });
+
+    if (respostaUPC.data && respostaUPC.data.items && respostaUPC.data.items.length > 0) {
+      const item = respostaUPC.data.items[0];
+      const nome = item.title || item.description || item.brand;
+
+      if (nome && nome.length > 2) {
+        const nomeLimpo = limparNome(nome);
+        console.log("✅ UPC Database:", nomeLimpo);
+        return { nome: nomeLimpo, codigo: codigo, origem: "upc-database" };
+      }
+    }
+  } catch (errUPC) {
+    console.log("⚠️ UPC Database erro:", errUPC.message);
+  }
+
   console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("❌ COSMOS: Produto NÃO encontrado");
-  console.log("   Tentativas: " + urls.length + " URLs");
+  console.log("❌ Produto NÃO encontrado em nenhuma fonte online");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   return null;
 }

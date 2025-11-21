@@ -37,9 +37,12 @@
     }
 
     h2 {
-      margin-top: 5px;
-      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      font-weight: 700;
+      font-size: 24px;
       color: #222;
+      line-height: 1.2;
     }
 
     .input-wrapper {
@@ -223,10 +226,13 @@
     }
 
     .header-slogan {
-      font-size: 14px;
+      font-size: 16px;
       color: #222;
-      font-weight: 500;
-      margin-top: 5px;
+      font-weight: 400;
+      margin-top: 8px;
+      margin-bottom: 0;
+      letter-spacing: -0.5px;
+      line-height: 1.4;
     }
 
     .clear-button {
@@ -921,27 +927,28 @@
     // Conectar Balança Bluetooth (Electrolux Kitchen Scale GKS.1136 BT)
     conectarBalancaBtn.addEventListener('click', async () => {
       try {
-        bluetoothStatus.textContent = 'Procurando balança...';
+        // Verificar se Bluetooth está disponível no navegador
+        if (!navigator.bluetooth) {
+          bluetoothStatus.innerHTML = 'Bluetooth não suportado neste navegador.<br><small>Use Chrome/Edge no Android ou computador. Safari não suporta Web Bluetooth.</small>';
+          bluetoothStatus.style.color = '#f44336';
+          return;
+        }
+
+        bluetoothStatus.textContent = 'Procurando balança... Selecione na lista que aparecer.';
         bluetoothStatus.style.color = '#666';
 
         // Procurar dispositivo Bluetooth
-        // A balança Electrolux GKS.1136 BT geralmente usa o serviço de peso padrão
+        // Usando acceptAllDevices para mostrar todos dispositivos disponíveis
         bluetoothDevice = await navigator.bluetooth.requestDevice({
-          filters: [
-            { namePrefix: 'Electrolux' },
-            { namePrefix: 'GKS' },
-            { namePrefix: 'Kitchen' },
-            { namePrefix: 'Scale' },
-            { namePrefix: 'BT Scale' }
-          ],
+          acceptAllDevices: true,
           optionalServices: [
             '0000181d-0000-1000-8000-00805f9b34fb', // Weight Scale Service
             '0000181b-0000-1000-8000-00805f9b34fb', // Body Composition Service
             '0000fff0-0000-1000-8000-00805f9b34fb', // Generic Custom Service
             '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
-            '00001801-0000-1000-8000-00805f9b34fb'  // Generic Attribute
-          ],
-          acceptAllDevices: false
+            '00001801-0000-1000-8000-00805f9b34fb', // Generic Attribute
+            'battery_service'
+          ]
         });
 
         bluetoothStatus.textContent = 'Conectando...';
@@ -1006,14 +1013,22 @@
 
         let mensagem = 'Erro ao conectar à balança.';
         if (error.name === 'NotFoundError') {
-          mensagem = 'Nenhuma balança encontrada. Certifique-se que está ligada.';
+          mensagem = 'Nenhuma balança encontrada. Certifique-se que está ligada e pareada no Bluetooth do celular.';
         } else if (error.name === 'SecurityError') {
-          mensagem = 'Permissão Bluetooth negada.';
+          mensagem = 'Permissão Bluetooth negada. Verifique as configurações do navegador.';
+        } else if (error.name === 'NotSupportedError') {
+          mensagem = 'Bluetooth não suportado neste navegador. Use Chrome no Android.';
+        } else if (error.name === 'TypeError' && error.message.includes('bluetooth')) {
+          mensagem = 'Bluetooth não disponível. Use Chrome/Edge no Android ou computador.';
+        } else if (error.message && error.message.includes('User cancelled')) {
+          mensagem = 'Seleção cancelada. Clique novamente para conectar.';
+          bluetoothStatus.style.color = '#666';
+          return;
         } else if (error.message) {
           mensagem = error.message;
         }
 
-        bluetoothStatus.textContent = mensagem;
+        bluetoothStatus.innerHTML = mensagem + '<br><small>Dica: Pareie a balança primeiro nas Configurações Bluetooth do celular.</small>';
         bluetoothStatus.style.color = '#f44336';
       }
     });
