@@ -524,14 +524,38 @@ app.post("/api/inventario", async (req, res) => {
       }
     }
 
-    // Adicionar novo registro
-    dados.push({
-      "Código de Barras": codigo,
-      "Produto": produto || "",
-      "Quantidade": quantidade || 1,
-      "Peso (kg)": peso || "",
-      "Data/Hora": dataHora ? new Date(dataHora).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR")
+    // Verificar se o produto já existe no inventário (evitar duplicação)
+    const codigoNormalizado = normalizarCodigo(codigo);
+    const indexExistente = dados.findIndex(item => {
+      const codigoItem = normalizarCodigo(item["Código de Barras"] || item["codigo"] || "");
+      return codigoItem === codigoNormalizado;
     });
+
+    let mensagem = "";
+    if (indexExistente >= 0) {
+      // Produto já existe - somar quantidade
+      const qtdAnterior = parseInt(dados[indexExistente]["Quantidade"]) || 0;
+      const qtdNova = parseInt(quantidade) || 1;
+      dados[indexExistente]["Quantidade"] = qtdAnterior + qtdNova;
+      dados[indexExistente]["Data/Hora"] = dataHora ? new Date(dataHora).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR");
+      // Atualizar peso se informado
+      if (peso) {
+        dados[indexExistente]["Peso (kg)"] = peso;
+      }
+      mensagem = `Quantidade atualizada: ${qtdAnterior} + ${qtdNova} = ${dados[indexExistente]["Quantidade"]}`;
+      console.log(`📦 Inventário: Item existente atualizado - ${codigo} - Nova qtd: ${dados[indexExistente]["Quantidade"]}`);
+    } else {
+      // Produto novo - adicionar registro
+      dados.push({
+        "Código de Barras": codigo,
+        "Produto": produto || "",
+        "Quantidade": quantidade || 1,
+        "Peso (kg)": peso || "",
+        "Data/Hora": dataHora ? new Date(dataHora).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR")
+      });
+      mensagem = "Produto adicionado ao inventário";
+      console.log(`✅ Inventário: Novo item adicionado - ${codigo} - ${produto}`);
+    }
 
     // Criar nova planilha
     const novaSheet = XLSX.utils.json_to_sheet(dados);
@@ -551,13 +575,9 @@ app.post("/api/inventario", async (req, res) => {
     // Salvar arquivo
     XLSX.writeFile(novoWorkbook, inventarioPath);
 
-    console.log(`✅ Inventário salvo: ${codigo} - ${produto} - Qtd: ${quantidade} - Peso: ${peso || 'N/A'}`);
-
     // Sincronizar com OneDrive (em background, não bloqueia)
-    let onedriveSincronizado = false;
     if (onedriveHabilitado()) {
       uploadParaOneDrive(inventarioPath)
-        .then(() => { onedriveSincronizado = true; })
         .catch(err => {
           console.error("⚠️ Erro ao sincronizar inventário com OneDrive:", err.message);
         });
@@ -565,8 +585,9 @@ app.post("/api/inventario", async (req, res) => {
 
     res.json({
       ok: true,
-      mensagem: "Produto salvo no inventário com sucesso",
+      mensagem: mensagem,
       total: dados.length,
+      atualizado: indexExistente >= 0,
       onedrive: onedriveHabilitado() ? "sincronizando" : "não configurado"
     });
 

@@ -19,7 +19,7 @@
       justify-content: center;
       align-items: flex-start;
       min-height: 100vh;
-      padding: 20px 20px 40px 20px;
+      padding: 8px 15px 30px 15px;
     }
 
     .container {
@@ -33,15 +33,15 @@
     }
 
     .form-content {
-      padding: 25px;
+      padding: 15px 20px;
     }
 
     h2 {
-      margin-top: 10px;
-      margin-bottom: 15px;
-      font-weight: 700;
-      font-size: 24px;
-      color: #222;
+      margin-top: 5px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #333;
       line-height: 1.2;
     }
 
@@ -217,22 +217,23 @@
     /* Header com Logo */
     .header-logo {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .header-logo img {
-      max-width: 150px;
+      max-width: 120px;
       height: auto;
+      margin-bottom: 2px;
     }
 
     .header-slogan {
-      font-size: 18px;
-      color: #222;
+      font-size: 14px;
+      color: #333;
       font-weight: 400;
-      margin-top: 4px;
+      margin-top: 0;
       margin-bottom: 0;
-      letter-spacing: 0.5px;
-      line-height: 1.3;
+      letter-spacing: 0.3px;
+      line-height: 1.2;
     }
 
     .clear-button {
@@ -277,9 +278,9 @@
 
     button {
       width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      margin-top: 15px;
+      padding: 12px;
+      font-size: 15px;
+      margin-top: 10px;
       border-radius: 10px;
       border: none;
       cursor: pointer;
@@ -770,7 +771,16 @@
 
       // Atualizar ultimaBusca ANTES da busca para evitar duplicatas em requisições rápidas
       ultimaBusca = codigo;
-      resultado.innerHTML = "<p style='margin-top: 20px;'>🔍 Buscando na base local...</p>";
+      resultado.innerHTML = `<p style='margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;'>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="animation: pulse 1s ease-in-out infinite;">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        Buscando...
+      </p>
+      <style>
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      </style>`;
 
       try {
         console.log("🔍 Iniciando busca para código:", codigo);
@@ -805,15 +815,15 @@
       }
     }
 
-    // SCANNER DE CÂMERA - Configurações otimizadas para melhor leitura
+    // SCANNER DE CÂMERA - Configurações PROFISSIONAIS para leitura rápida e precisa
     document.getElementById("scanner").onclick = async () => {
       try {
         videoContainer.classList.add('active');
         scanStatus.textContent = "Iniciando câmera...";
 
-        // Usar MultiFormatReader para suportar mais formatos de código
+        // Usar MultiFormatReader com configurações otimizadas para velocidade
         const hints = new Map();
-        // Formatos de código de barras 1D mais comuns
+        // Formatos de código de barras 1D mais comuns - ordenados por frequência
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
           ZXing.BarcodeFormat.EAN_13,
           ZXing.BarcodeFormat.EAN_8,
@@ -821,42 +831,74 @@
           ZXing.BarcodeFormat.UPC_E,
           ZXing.BarcodeFormat.CODE_128,
           ZXing.BarcodeFormat.CODE_39,
-          ZXing.BarcodeFormat.ITF
+          ZXing.BarcodeFormat.ITF,
+          ZXing.BarcodeFormat.CODABAR
         ]);
-        // Tentar mais vezes por frame
+        // Configurações para leitura mais agressiva
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
 
         codeReader = new ZXing.BrowserMultiFormatReader(hints);
-        // Configurar intervalo de scan mais frequente (100ms = 10 scans/segundo)
-        codeReader.timeBetweenDecodingAttempts = 100;
+        // Scan ultra-rápido: 50ms = 20 scans/segundo
+        codeReader.timeBetweenDecodingAttempts = 50;
 
-        // Configurações de câmera otimizadas para foco e nitidez
+        // Configurações de câmera PROFISSIONAIS para melhor foco e nitidez
         const constraints = {
           video: {
-            facingMode: 'environment',
+            facingMode: { exact: 'environment' },
             width: { ideal: 1920, min: 1280 },
             height: { ideal: 1080, min: 720 },
-            // Configurações avançadas para melhor foco
-            focusMode: { ideal: 'continuous' },
-            exposureMode: { ideal: 'continuous' },
-            whiteBalanceMode: { ideal: 'continuous' }
+            frameRate: { ideal: 30, min: 15 },
+            aspectRatio: { ideal: 16/9 }
           }
         };
 
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
 
-        // Tentar aplicar foco contínuo após obter o stream
+        // Aplicar configurações avançadas de câmera para FOCO PERFEITO
         try {
           const track = stream.getVideoTracks()[0];
           const capabilities = track.getCapabilities();
-          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-            await track.applyConstraints({
-              advanced: [{ focusMode: 'continuous' }]
-            });
+          const advancedConstraints = [];
+
+          // Foco contínuo automático (mais importante!)
+          if (capabilities.focusMode) {
+            if (capabilities.focusMode.includes('continuous')) {
+              advancedConstraints.push({ focusMode: 'continuous' });
+            } else if (capabilities.focusMode.includes('auto')) {
+              advancedConstraints.push({ focusMode: 'auto' });
+            }
+          }
+
+          // Exposição contínua para ajustar luz automaticamente
+          if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+            advancedConstraints.push({ exposureMode: 'continuous' });
+          }
+
+          // Balanço de branco automático
+          if (capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes('continuous')) {
+            advancedConstraints.push({ whiteBalanceMode: 'continuous' });
+          }
+
+          // Desativar torch/flash para não atrapalhar
+          if (capabilities.torch) {
+            advancedConstraints.push({ torch: false });
+          }
+
+          // Zoom no nível ideal para códigos de barras (se disponível)
+          if (capabilities.zoom && capabilities.zoom.min && capabilities.zoom.max) {
+            const zoomIdeal = Math.min(capabilities.zoom.max, Math.max(capabilities.zoom.min, 1.5));
+            advancedConstraints.push({ zoom: zoomIdeal });
+          }
+
+          // Aplicar todas as configurações
+          if (advancedConstraints.length > 0) {
+            await track.applyConstraints({ advanced: advancedConstraints });
+            console.log('✅ Configurações avançadas de câmera aplicadas');
           }
         } catch (focusErr) {
-          console.log('Foco automático não disponível:', focusErr);
+          console.log('⚠️ Algumas configurações de câmera não disponíveis:', focusErr.message);
         }
 
         // Aguardar o vídeo carregar antes de iniciar
@@ -864,32 +906,57 @@
 
         scanStatus.textContent = "Posicione o código de barras no centro";
 
-        // Decodificar código de barras com configurações otimizadas
+        let lastScannedCode = '';
+        let scanConfirmCount = 0;
+
+        // Decodificar código de barras com VALIDAÇÃO DUPLA para evitar erros
         codeReader.decodeFromVideoDevice(null, video, (result, err) => {
           if (result) {
-            // Som de sucesso (opcional, pode ser removido se não quiser)
-            try {
-              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              oscillator.frequency.value = 800;
-              oscillator.type = 'sine';
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-              oscillator.start(audioContext.currentTime);
-              oscillator.stop(audioContext.currentTime + 0.1);
-            } catch (e) {
-              // Ignorar erro de som
+            const scannedCode = result.text;
+
+            // Validação dupla: confirmar leitura 2x seguidas para evitar erros
+            if (scannedCode === lastScannedCode) {
+              scanConfirmCount++;
+            } else {
+              lastScannedCode = scannedCode;
+              scanConfirmCount = 1;
             }
 
-            input.value = result.text;
-            scanStatus.textContent = "✓ Código detectado!";
+            // Só aceitar após 2 leituras iguais consecutivas
+            if (scanConfirmCount >= 2) {
+              // Vibrar dispositivo para feedback tátil (se disponível)
+              if (navigator.vibrate) {
+                navigator.vibrate(100);
+              }
 
-            setTimeout(() => {
-              fecharCamera();
-              buscar();
-            }, 500);
+              // Som de sucesso
+              try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 1200;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.15);
+              } catch (e) {
+                // Ignorar erro de som
+              }
+
+              input.value = scannedCode;
+              scanStatus.textContent = "✓ Código detectado!";
+              scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
+
+              setTimeout(() => {
+                fecharCamera();
+                buscar();
+              }, 300);
+            } else {
+              scanStatus.textContent = "Confirmando leitura...";
+            }
           }
         });
 
@@ -901,6 +968,31 @@
           mensagem = 'Permissão de câmera negada. Por favor, permita o acesso nas configurações do navegador.';
         } else if (err.name === 'NotFoundError') {
           mensagem = 'Nenhuma câmera encontrada no dispositivo.';
+        } else if (err.name === 'OverconstrainedError') {
+          // Tentar novamente com configurações mais simples
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'environment' }
+            });
+            video.srcObject = stream;
+            await video.play();
+            scanStatus.textContent = "Posicione o código de barras no centro";
+
+            codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+              if (result) {
+                if (navigator.vibrate) navigator.vibrate(100);
+                input.value = result.text;
+                scanStatus.textContent = "✓ Código detectado!";
+                setTimeout(() => {
+                  fecharCamera();
+                  buscar();
+                }, 300);
+              }
+            });
+            return;
+          } catch (e) {
+            mensagem = 'Erro nas configurações da câmera. Tente novamente.';
+          }
         }
 
         alert(mensagem);
@@ -1163,13 +1255,14 @@
         const result = await resp.json();
 
         if (result.ok) {
+          const textoSucesso = result.atualizado ? 'Quantidade atualizada!' : 'Salvo com sucesso!';
           salvarInventarioBtn.innerHTML = `
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 6L9 17l-5-5"/>
             </svg>
-            Salvo com sucesso!
+            ${textoSucesso}
           `;
-          salvarInventarioBtn.style.background = '#4CAF50';
+          salvarInventarioBtn.style.background = result.atualizado ? '#2196F3' : '#4CAF50';
 
           // Resetar após 2 segundos
           setTimeout(() => {
