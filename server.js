@@ -575,6 +575,73 @@ app.get("/consulta/:codigo", async (req, res) => {
 });
 
 // -------------------------------------------
+// API INVENTÁRIO - Salvar produtos no Excel
+// -------------------------------------------
+app.post("/api/inventario", async (req, res) => {
+  try {
+    const { codigo, produto, quantidade, peso, dataHora } = req.body;
+
+    if (!codigo) {
+      return res.json({ ok: false, error: "Código de barras é obrigatório" });
+    }
+
+    const inventarioPath = path.join(projectRoot, "data", "Inventário.xlsx");
+    let dados = [];
+
+    // Carregar dados existentes se o arquivo existir
+    if (fs.existsSync(inventarioPath)) {
+      try {
+        const workbook = XLSX.readFile(inventarioPath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        dados = XLSX.utils.sheet_to_json(sheet);
+      } catch (e) {
+        console.error("Erro ao ler Inventário.xlsx:", e);
+        dados = [];
+      }
+    }
+
+    // Adicionar novo registro
+    dados.push({
+      "Código de Barras": codigo,
+      "Produto": produto || "",
+      "Quantidade": quantidade || 1,
+      "Peso (kg)": peso || "",
+      "Data/Hora": dataHora ? new Date(dataHora).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR")
+    });
+
+    // Criar nova planilha
+    const novaSheet = XLSX.utils.json_to_sheet(dados);
+
+    // Ajustar largura das colunas
+    novaSheet['!cols'] = [
+      { wch: 18 }, // Código de Barras
+      { wch: 40 }, // Produto
+      { wch: 12 }, // Quantidade
+      { wch: 12 }, // Peso
+      { wch: 20 }  // Data/Hora
+    ];
+
+    const novoWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(novoWorkbook, novaSheet, "Inventário");
+
+    // Salvar arquivo
+    XLSX.writeFile(novoWorkbook, inventarioPath);
+
+    console.log(`✅ Inventário salvo: ${codigo} - ${produto} - Qtd: ${quantidade} - Peso: ${peso || 'N/A'}`);
+
+    res.json({
+      ok: true,
+      mensagem: "Produto salvo no inventário com sucesso",
+      total: dados.length
+    });
+
+  } catch (error) {
+    console.error("❌ Erro ao salvar inventário:", error);
+    res.json({ ok: false, error: error.message });
+  }
+});
+
+// -------------------------------------------
 // SPA – sempre entrega o index.html
 // -------------------------------------------
 app.get("*", (req, res) => {

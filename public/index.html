@@ -25,27 +25,11 @@
     .container {
       width: 100%;
       max-width: 420px;
-      background: white;
+      background: transparent;
       border-radius: 20px;
       padding: 0;
       text-align: center;
       overflow: hidden;
-    }
-
-    .logo-container {
-      background: #66F7CC;
-      padding: 25px 15px;
-      margin: 0;
-      width: 100%;
-      transition: all 0.3s ease;
-    }
-
-
-    .logo {
-      width: 150px;
-      display: block;
-      margin: 0 auto;
-      transition: all 0.3s ease;
     }
 
     .form-content {
@@ -67,12 +51,159 @@
     input {
       width: 100%;
       padding: 12px 45px 12px 12px;
-      border: 2px solid #ccc;
+      border: 2px solid #000;
       border-radius: 10px;
       font-size: 18px;
       text-align: center;
       box-sizing: border-box;
       -moz-appearance: textfield;
+      background: transparent;
+    }
+
+    input::placeholder {
+      color: #333;
+    }
+
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 15px;
+      padding: 12px 15px;
+      border: 2px solid #000;
+      border-radius: 10px;
+      background: transparent;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #6a5acd;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Campos de Peso e Quantidade */
+    .peso-container {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .peso-container.visible {
+      display: block;
+    }
+
+    .peso-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .peso-input {
+      flex: 1;
+    }
+
+    .bluetooth-btn {
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      padding: 0;
+      margin: 0;
+      border-radius: 10px;
+      background: #6a5acd;
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .bluetooth-btn:hover {
+      background: #5a4abd;
+    }
+
+    .bluetooth-btn.connected {
+      background: #4CAF50;
+    }
+
+    .bluetooth-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .quantidade-container {
+      margin-top: 10px;
+    }
+
+    /* Label para campos */
+    .field-label {
+      display: block;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+      margin-left: 5px;
+    }
+
+    /* Botão Salvar Inventário */
+    #salvar-inventario {
+      background: #4CAF50;
+      color: white;
+      margin-top: 10px;
+    }
+
+    #salvar-inventario:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
 
     .clear-button {
@@ -344,14 +475,10 @@
 
   <div class="container">
 
-    <div class="logo-container">
-      <img src="logo-mise.png" class="logo" />
-    </div>
-
     <div class="form-content">
       <h2>Scanner de Códigos de Barras</h2>
 
-      <!-- INPUT COM TYPE TEXT PARA EVITAR SETAS -->
+      <!-- INPUT CÓDIGO DE BARRAS -->
       <div class="input-wrapper">
         <input
             id="codigo"
@@ -363,12 +490,62 @@
         <button class="clear-button" id="clear-button">✕</button>
       </div>
 
+      <!-- TOGGLE PESAGEM -->
+      <div class="toggle-container">
+        <span class="toggle-label">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          Balança Bluetooth
+        </span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-pesagem">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- CAMPO DE PESO (visível quando toggle ativo) -->
+      <div class="peso-container" id="peso-container">
+        <label class="field-label">Peso (kg)</label>
+        <div class="peso-wrapper">
+          <div class="input-wrapper peso-input">
+            <input
+                id="peso"
+                type="text"
+                placeholder="0.000"
+                inputmode="decimal"
+                readonly
+            />
+          </div>
+          <button class="bluetooth-btn" id="conectar-balanca" title="Conectar Balança Bluetooth">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>
+            </svg>
+          </button>
+        </div>
+        <p id="bluetooth-status" style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Clique no ícone para conectar a balança</p>
+      </div>
+
+      <!-- CAMPO DE QUANTIDADE -->
+      <div class="quantidade-container">
+        <label class="field-label">Quantidade</label>
+        <div class="input-wrapper">
+          <input
+              id="quantidade"
+              type="number"
+              placeholder="1"
+              min="1"
+              value="1"
+          />
+        </div>
+      </div>
+
       <button id="buscar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <path d="m21 21-4.35-4.35"></path>
         </svg>
-        Buscando na base mise
+        Buscar na base mise
       </button>
 
       <button id="scanner">
@@ -377,6 +554,16 @@
           <circle cx="12" cy="13" r="4"></circle>
         </svg>
         Scanner
+      </button>
+
+      <!-- BOTÃO SALVAR INVENTÁRIO -->
+      <button id="salvar-inventario" disabled>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+          <polyline points="17,21 17,13 7,13 7,21"/>
+          <polyline points="7,3 7,8 15,8"/>
+        </svg>
+        Salvar no Inventário
       </button>
 
       <div id="resultado"></div>
@@ -672,6 +859,270 @@
       videoContainer.classList.remove('active');
       scanStatus.textContent = "Posicione o código de barras no centro";
     }
+
+    // ========================================
+    // TOGGLE PESAGEM E BLUETOOTH
+    // ========================================
+    const togglePesagem = document.getElementById('toggle-pesagem');
+    const pesoContainer = document.getElementById('peso-container');
+    const pesoInput = document.getElementById('peso');
+    const conectarBalancaBtn = document.getElementById('conectar-balanca');
+    const bluetoothStatus = document.getElementById('bluetooth-status');
+    const quantidadeInput = document.getElementById('quantidade');
+    const salvarInventarioBtn = document.getElementById('salvar-inventario');
+
+    let bluetoothDevice = null;
+    let bluetoothCharacteristic = null;
+    let produtoAtual = null;
+
+    // Toggle mostrar/esconder campo de peso
+    togglePesagem.addEventListener('change', () => {
+      if (togglePesagem.checked) {
+        pesoContainer.classList.add('visible');
+      } else {
+        pesoContainer.classList.remove('visible');
+        // Desconectar balança se estiver conectada
+        if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+          bluetoothDevice.gatt.disconnect();
+        }
+        pesoInput.value = '';
+      }
+    });
+
+    // Conectar Balança Bluetooth (Electrolux Kitchen Scale GKS.1136 BT)
+    conectarBalancaBtn.addEventListener('click', async () => {
+      try {
+        bluetoothStatus.textContent = 'Procurando balança...';
+        bluetoothStatus.style.color = '#666';
+
+        // Procurar dispositivo Bluetooth
+        // A balança Electrolux GKS.1136 BT geralmente usa o serviço de peso padrão
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { namePrefix: 'Electrolux' },
+            { namePrefix: 'GKS' },
+            { namePrefix: 'Kitchen' },
+            { namePrefix: 'Scale' },
+            { namePrefix: 'BT Scale' }
+          ],
+          optionalServices: [
+            '0000181d-0000-1000-8000-00805f9b34fb', // Weight Scale Service
+            '0000181b-0000-1000-8000-00805f9b34fb', // Body Composition Service
+            '0000fff0-0000-1000-8000-00805f9b34fb', // Generic Custom Service
+            '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
+            '00001801-0000-1000-8000-00805f9b34fb'  // Generic Attribute
+          ],
+          acceptAllDevices: false
+        });
+
+        bluetoothStatus.textContent = 'Conectando...';
+
+        // Conectar ao GATT Server
+        const server = await bluetoothDevice.gatt.connect();
+
+        // Tentar encontrar o serviço de peso
+        let service;
+        try {
+          service = await server.getPrimaryService('0000181d-0000-1000-8000-00805f9b34fb');
+        } catch (e) {
+          // Tentar serviço alternativo
+          try {
+            service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+          } catch (e2) {
+            // Listar todos os serviços disponíveis
+            const services = await server.getPrimaryServices();
+            if (services.length > 0) {
+              service = services[0];
+            } else {
+              throw new Error('Nenhum serviço encontrado');
+            }
+          }
+        }
+
+        // Encontrar a característica de peso
+        const characteristics = await service.getCharacteristics();
+
+        for (const char of characteristics) {
+          if (char.properties.notify || char.properties.indicate) {
+            bluetoothCharacteristic = char;
+            break;
+          }
+        }
+
+        if (!bluetoothCharacteristic) {
+          bluetoothCharacteristic = characteristics[0];
+        }
+
+        // Iniciar notificações
+        if (bluetoothCharacteristic.properties.notify) {
+          await bluetoothCharacteristic.startNotifications();
+          bluetoothCharacteristic.addEventListener('characteristicvaluechanged', handleWeightData);
+        }
+
+        // Atualizar UI
+        conectarBalancaBtn.classList.add('connected');
+        bluetoothStatus.textContent = 'Balança conectada! Aguardando peso...';
+        bluetoothStatus.style.color = '#4CAF50';
+
+        // Monitorar desconexão
+        bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+          conectarBalancaBtn.classList.remove('connected');
+          bluetoothStatus.textContent = 'Balança desconectada. Clique para reconectar.';
+          bluetoothStatus.style.color = '#f44336';
+          pesoInput.value = '';
+        });
+
+      } catch (error) {
+        console.error('Erro Bluetooth:', error);
+
+        let mensagem = 'Erro ao conectar à balança.';
+        if (error.name === 'NotFoundError') {
+          mensagem = 'Nenhuma balança encontrada. Certifique-se que está ligada.';
+        } else if (error.name === 'SecurityError') {
+          mensagem = 'Permissão Bluetooth negada.';
+        } else if (error.message) {
+          mensagem = error.message;
+        }
+
+        bluetoothStatus.textContent = mensagem;
+        bluetoothStatus.style.color = '#f44336';
+      }
+    });
+
+    // Processar dados de peso da balança
+    function handleWeightData(event) {
+      const value = event.target.value;
+      const data = new Uint8Array(value.buffer);
+
+      // Interpretar dados - formato pode variar por balança
+      // Formato comum: peso em gramas ou kg como inteiro/float
+      let peso = 0;
+
+      if (data.length >= 2) {
+        // Tentar interpretar como peso em gramas (little-endian)
+        peso = (data[1] << 8) | data[0];
+        peso = peso / 1000; // Converter para kg
+      } else if (data.length === 1) {
+        peso = data[0] / 10;
+      }
+
+      // Validar peso
+      if (peso > 0 && peso < 50) {
+        pesoInput.value = peso.toFixed(3);
+        atualizarBotaoSalvar();
+      }
+    }
+
+    // ========================================
+    // SALVAR NO INVENTÁRIO
+    // ========================================
+
+    // Atualizar estado do botão salvar
+    function atualizarBotaoSalvar() {
+      const codigo = input.value.replace(/\D/g, "");
+      const quantidade = parseInt(quantidadeInput.value) || 0;
+
+      if (codigo && quantidade > 0) {
+        salvarInventarioBtn.disabled = false;
+      } else {
+        salvarInventarioBtn.disabled = true;
+      }
+    }
+
+    // Monitorar mudanças
+    input.addEventListener('input', atualizarBotaoSalvar);
+    quantidadeInput.addEventListener('input', atualizarBotaoSalvar);
+
+    // Sobrescrever função mostrarProduto para guardar produto atual
+    const originalMostrarProduto = mostrarProduto;
+    mostrarProduto = function(produto, origem) {
+      produtoAtual = produto;
+      originalMostrarProduto(produto, origem);
+      atualizarBotaoSalvar();
+    };
+
+    // Salvar no inventário
+    salvarInventarioBtn.addEventListener('click', async () => {
+      const codigo = input.value.replace(/\D/g, "");
+      const quantidade = parseInt(quantidadeInput.value) || 1;
+      const peso = pesoInput.value || '';
+
+      if (!codigo) {
+        alert('Digite ou escaneie um código de barras.');
+        return;
+      }
+
+      const dadosInventario = {
+        codigo: codigo,
+        produto: produtoAtual?.produto || produtoAtual?.nome || '',
+        quantidade: quantidade,
+        peso: peso,
+        dataHora: new Date().toISOString()
+      };
+
+      try {
+        salvarInventarioBtn.disabled = true;
+        salvarInventarioBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          Salvando...
+        `;
+
+        const resp = await fetch('/api/inventario', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dadosInventario)
+        });
+
+        const result = await resp.json();
+
+        if (result.ok) {
+          salvarInventarioBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            Salvo com sucesso!
+          `;
+          salvarInventarioBtn.style.background = '#4CAF50';
+
+          // Resetar após 2 segundos
+          setTimeout(() => {
+            salvarInventarioBtn.innerHTML = `
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                <polyline points="17,21 17,13 7,13 7,21"/>
+                <polyline points="7,3 7,8 15,8"/>
+              </svg>
+              Salvar no Inventário
+            `;
+            salvarInventarioBtn.style.background = '#4CAF50';
+            salvarInventarioBtn.disabled = false;
+
+            // Limpar campos para próximo produto
+            quantidadeInput.value = '1';
+          }, 2000);
+        } else {
+          throw new Error(result.error || 'Erro ao salvar');
+        }
+      } catch (error) {
+        console.error('Erro ao salvar inventário:', error);
+        alert('Erro ao salvar no inventário: ' + error.message);
+
+        salvarInventarioBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17,21 17,13 7,13 7,21"/>
+            <polyline points="7,3 7,8 15,8"/>
+          </svg>
+          Salvar no Inventário
+        `;
+        salvarInventarioBtn.disabled = false;
+      }
+    });
 
 
   </script>
