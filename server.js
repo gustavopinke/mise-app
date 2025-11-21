@@ -7,6 +7,7 @@ import XLSX from "xlsx";
 import * as cheerio from "cheerio";
 import dotenv from "dotenv";
 import { buscarFotoR2, r2Habilitado } from "./r2-helper.js";
+import { uploadParaOneDrive, onedriveHabilitado, getOneDriveStatus } from "./onedrive-helper.js";
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -401,6 +402,13 @@ function salvarProduto(codigo, nome) {
     // Salvar arquivo
     XLSX.writeFile(novoWorkbook, excelPath);
     console.log("✅ Produto salvo no Excel:", codigo, "-", nome);
+
+    // Sincronizar com OneDrive (em background, não bloqueia)
+    if (onedriveHabilitado()) {
+      uploadParaOneDrive(excelPath).catch(err => {
+        console.error("⚠️ Erro ao sincronizar com OneDrive:", err.message);
+      });
+    }
   }
 }
 
@@ -545,16 +553,69 @@ app.post("/api/inventario", async (req, res) => {
 
     console.log(`✅ Inventário salvo: ${codigo} - ${produto} - Qtd: ${quantidade} - Peso: ${peso || 'N/A'}`);
 
+    // Sincronizar com OneDrive (em background, não bloqueia)
+    let onedriveSincronizado = false;
+    if (onedriveHabilitado()) {
+      uploadParaOneDrive(inventarioPath)
+        .then(() => { onedriveSincronizado = true; })
+        .catch(err => {
+          console.error("⚠️ Erro ao sincronizar inventário com OneDrive:", err.message);
+        });
+    }
+
     res.json({
       ok: true,
       mensagem: "Produto salvo no inventário com sucesso",
-      total: dados.length
+      total: dados.length,
+      onedrive: onedriveHabilitado() ? "sincronizando" : "não configurado"
     });
 
   } catch (error) {
     console.error("❌ Erro ao salvar inventário:", error);
     res.json({ ok: false, error: error.message });
   }
+});
+
+// -------------------------------------------
+// API ONEDRIVE - Status e sincronização
+// -------------------------------------------
+
+// Status do OneDrive
+app.get("/api/onedrive/status", (req, res) => {
+  res.json(getOneDriveStatus());
+});
+
+// Sincronizar arquivos manualmente
+app.post("/api/onedrive/sincronizar", async (req, res) => {
+  if (!onedriveHabilitado()) {
+    return res.json({
+      ok: false,
+      error: "OneDrive não configurado. Configure as variáveis ONEDRIVE_CLIENT_ID, ONEDRIVE_CLIENT_SECRET e ONEDRIVE_REFRESH_TOKEN no arquivo .env"
+    });
+  }
+
+  const inventarioPath = path.join(projectRoot, "data", "Inventário.xlsx");
+  const okBasePath = path.join(projectRoot, "data", "OK BASE DO APP COLETADO.xlsx");
+
+  const resultados = [];
+
+  // Sincronizar Inventário
+  if (fs.existsSync(inventarioPath)) {
+    const result = await uploadParaOneDrive(inventarioPath);
+    resultados.push({ arquivo: "Inventário.xlsx", ...result });
+  }
+
+  // Sincronizar OK BASE DO APP COLETADO
+  if (fs.existsSync(okBasePath)) {
+    const result = await uploadParaOneDrive(okBasePath);
+    resultados.push({ arquivo: "OK BASE DO APP COLETADO.xlsx", ...result });
+  }
+
+  res.json({
+    ok: true,
+    mensagem: "Sincronização concluída",
+    resultados
+  });
 });
 
 // -------------------------------------------
