@@ -503,7 +503,17 @@
       let imagemHTML = '';
       if (produto.foto) {
         console.log('📸 Foto do produto:', produto.foto);
-        imagemHTML = `<img src="/fotos/${produto.foto}" class="produto-imagem" alt="${produto.produto || produto.nome}" onclick="abrirImagemModal('/fotos/${produto.foto}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
+        // produto.foto pode ser um objeto {fonte, url, filename} ou uma string
+        let fotoUrl = '';
+        if (typeof produto.foto === 'object' && produto.foto.url) {
+          fotoUrl = produto.foto.url;
+        } else if (typeof produto.foto === 'string') {
+          fotoUrl = `/fotos/${produto.foto}`;
+        }
+
+        if (fotoUrl) {
+          imagemHTML = `<img src="${fotoUrl}" class="produto-imagem" alt="${produto.produto || produto.nome}" onclick="abrirImagemModal('${fotoUrl}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
+        }
       } else {
         console.log('⚠️ Nenhuma foto disponível para o produto');
       }
