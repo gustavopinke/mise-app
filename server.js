@@ -254,6 +254,177 @@ function limparNome(nome) {
 }
 
 // -------------------------------------------
+// BUSCA ONLINE – OPEN FOOD FACTS (API gratuita)
+// -------------------------------------------
+async function buscarOpenFoodFacts(codigo) {
+  console.log("🥫 Buscando no Open Food Facts...");
+
+  try {
+    const url = `https://world.openfoodfacts.org/api/v2/product/${codigo}.json`;
+    const resposta = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        "User-Agent": "MISE-Scanner/1.0 (contact@mise.ws)"
+      }
+    });
+
+    if (resposta.data && resposta.data.status === 1 && resposta.data.product) {
+      const produto = resposta.data.product;
+      const nome = produto.product_name_pt || produto.product_name || produto.generic_name || null;
+
+      if (nome) {
+        console.log("✅ Open Food Facts: Encontrado -", nome);
+        return {
+          nome: nome,
+          codigo: codigo,
+          marca: produto.brands || "",
+          categoria: produto.categories || "",
+          origem: "openfoodfacts"
+        };
+      }
+    }
+  } catch (err) {
+    console.log("❌ Open Food Facts: Erro -", err.message);
+  }
+
+  return null;
+}
+
+// -------------------------------------------
+// BUSCA ONLINE – OPEN BEAUTY FACTS (cosméticos)
+// -------------------------------------------
+async function buscarOpenBeautyFacts(codigo) {
+  console.log("💄 Buscando no Open Beauty Facts...");
+
+  try {
+    const url = `https://world.openbeautyfacts.org/api/v2/product/${codigo}.json`;
+    const resposta = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        "User-Agent": "MISE-Scanner/1.0 (contact@mise.ws)"
+      }
+    });
+
+    if (resposta.data && resposta.data.status === 1 && resposta.data.product) {
+      const produto = resposta.data.product;
+      const nome = produto.product_name_pt || produto.product_name || produto.generic_name || null;
+
+      if (nome) {
+        console.log("✅ Open Beauty Facts: Encontrado -", nome);
+        return {
+          nome: nome,
+          codigo: codigo,
+          marca: produto.brands || "",
+          categoria: produto.categories || "",
+          origem: "openbeautyfacts"
+        };
+      }
+    }
+  } catch (err) {
+    console.log("❌ Open Beauty Facts: Erro -", err.message);
+  }
+
+  return null;
+}
+
+// -------------------------------------------
+// BUSCA ONLINE – OPEN PET FOOD FACTS (ração/pet)
+// -------------------------------------------
+async function buscarOpenPetFoodFacts(codigo) {
+  console.log("🐕 Buscando no Open Pet Food Facts...");
+
+  try {
+    const url = `https://world.openpetfoodfacts.org/api/v2/product/${codigo}.json`;
+    const resposta = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        "User-Agent": "MISE-Scanner/1.0 (contact@mise.ws)"
+      }
+    });
+
+    if (resposta.data && resposta.data.status === 1 && resposta.data.product) {
+      const produto = resposta.data.product;
+      const nome = produto.product_name_pt || produto.product_name || produto.generic_name || null;
+
+      if (nome) {
+        console.log("✅ Open Pet Food Facts: Encontrado -", nome);
+        return {
+          nome: nome,
+          codigo: codigo,
+          marca: produto.brands || "",
+          categoria: produto.categories || "",
+          origem: "openpetfoodfacts"
+        };
+      }
+    }
+  } catch (err) {
+    console.log("❌ Open Pet Food Facts: Erro -", err.message);
+  }
+
+  return null;
+}
+
+// -------------------------------------------
+// BUSCA ONLINE – UPCITEMDB (banco de dados UPC/EAN)
+// -------------------------------------------
+async function buscarUPCItemDB(codigo) {
+  console.log("🏷️ Buscando no UPCItemDB...");
+
+  try {
+    // UPCItemDB tem uma API gratuita com limite
+    const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${codigo}`;
+    const resposta = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "MISE-Scanner/1.0"
+      }
+    });
+
+    if (resposta.data && resposta.data.code === "OK" && resposta.data.items && resposta.data.items.length > 0) {
+      const item = resposta.data.items[0];
+      const nome = item.title || item.description || null;
+
+      if (nome) {
+        console.log("✅ UPCItemDB: Encontrado -", nome);
+        return {
+          nome: nome,
+          codigo: codigo,
+          marca: item.brand || "",
+          categoria: item.category || "",
+          origem: "upcitemdb"
+        };
+      }
+    }
+  } catch (err) {
+    // UPCItemDB pode retornar 429 (rate limit) ou 404
+    if (err.response && err.response.status === 429) {
+      console.log("⚠️ UPCItemDB: Limite de requisições atingido");
+    } else {
+      console.log("❌ UPCItemDB: Erro -", err.message);
+    }
+  }
+
+  return null;
+}
+
+// -------------------------------------------
+// BUSCA EM TODAS AS FONTES ONLINE
+// -------------------------------------------
+async function buscarEmTodasFontes(codigo) {
+  // Buscar em paralelo para mais velocidade
+  const [openFood, openBeauty, openPet, upcItem] = await Promise.all([
+    buscarOpenFoodFacts(codigo).catch(() => null),
+    buscarOpenBeautyFacts(codigo).catch(() => null),
+    buscarOpenPetFoodFacts(codigo).catch(() => null),
+    buscarUPCItemDB(codigo).catch(() => null)
+  ]);
+
+  // Retornar o primeiro resultado encontrado
+  return openFood || openBeauty || openPet || upcItem || null;
+}
+
+// -------------------------------------------
 // BUSCA ONLINE – COSMOS (seguindo lógica do script Python)
 // -------------------------------------------
 async function buscarCosmos(codigo) {
@@ -466,8 +637,36 @@ app.get("/consulta/:codigo", async (req, res) => {
     }
   }
 
-  // 3ª BUSCA ONLINE (Cosmos)
-  console.log("🌐 Buscando no Cosmos...");
+  // 3ª BUSCA ONLINE - APIs abertas (Open Food Facts, UPCItemDB, etc.)
+  console.log("🌐 Buscando em APIs abertas...");
+  try {
+    const resultadoAPIs = await buscarEmTodasFontes(codigo);
+    if (resultadoAPIs && resultadoAPIs.nome) {
+      console.log(`✅ Encontrado em ${resultadoAPIs.origem}:`, resultadoAPIs.nome);
+      salvarProduto(codigo, resultadoAPIs.nome);
+
+      // Buscar foto do produto
+      const foto = await buscarFoto(codigo);
+
+      return res.json({
+        ok: true,
+        origem: resultadoAPIs.origem,
+        produto: {
+          "cod de barra": codigo,
+          nome: resultadoAPIs.nome,
+          produto: resultadoAPIs.nome,
+          marca: resultadoAPIs.marca || "",
+          categoria: resultadoAPIs.categoria || "",
+          foto: foto
+        }
+      });
+    }
+  } catch (erroAPIs) {
+    console.error("❌ Erro nas APIs abertas:", erroAPIs.message);
+  }
+
+  // 4ª BUSCA ONLINE - Cosmos (fallback, faz scraping de HTML)
+  console.log("🌐 Buscando no Cosmos (fallback)...");
   try {
     const resultadoCosmos = await buscarCosmos(codigo);
     if (resultadoCosmos && resultadoCosmos.nome) {
@@ -493,9 +692,9 @@ app.get("/consulta/:codigo", async (req, res) => {
     console.error("❌ Erro ao buscar no Cosmos:", erroCosmosGenerico);
   }
 
-  // Nada encontrado
+  // Nada encontrado em nenhuma fonte
   console.log("❌ Produto não encontrado em nenhuma base");
-  res.json({ ok: false, mensagem: "Produto não encontrado em nenhuma base (local, cache ou Cosmos)" });
+  res.json({ ok: false, mensagem: "Produto não encontrado em nenhuma base (local, cache, APIs abertas ou Cosmos)" });
 });
 
 // -------------------------------------------

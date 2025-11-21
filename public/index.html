@@ -1046,12 +1046,13 @@
       }
     });
 
+    let pollingInterval = null;
+    let allCharacteristics = [];
+
     // Conectar Balança Bluetooth (Electrolux Kitchen Scale GKS.1136 BT)
     conectarBalancaBtn.addEventListener('click', async () => {
       try {
         // Verificar se Bluetooth está disponível no navegador
-        // Web Bluetooth só funciona em Chrome/Edge no Android ou Desktop
-        // NÃO funciona em: Safari, Firefox, iOS (nenhum navegador)
         if (typeof navigator === 'undefined' || !navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
           bluetoothStatus.innerHTML = '<strong>Bluetooth não suportado</strong><br><small>Web Bluetooth só funciona em:<br>• Chrome no Android<br>• Chrome/Edge no computador<br><br>NÃO funciona em Safari ou iOS.</small>';
           bluetoothStatus.style.color = '#f44336';
@@ -1061,67 +1062,79 @@
         bluetoothStatus.textContent = 'Procurando balança... Selecione na lista que aparecer.';
         bluetoothStatus.style.color = '#666';
 
-        // Procurar dispositivo Bluetooth
-        // Usando acceptAllDevices para mostrar todos dispositivos disponíveis
+        // Serviços comuns de balanças
+        const knownServices = [
+          '0000181d-0000-1000-8000-00805f9b34fb', // Weight Scale Service
+          '0000181b-0000-1000-8000-00805f9b34fb', // Body Composition Service
+          '0000fff0-0000-1000-8000-00805f9b34fb', // Custom Service (comum em balanças chinesas)
+          '0000ffe0-0000-1000-8000-00805f9b34fb', // Custom Service 2
+          '0000fee7-0000-1000-8000-00805f9b34fb', // Tencent service
+          '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
+          '00001801-0000-1000-8000-00805f9b34fb', // Generic Attribute
+          'battery_service'
+        ];
+
         bluetoothDevice = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
-          optionalServices: [
-            '0000181d-0000-1000-8000-00805f9b34fb', // Weight Scale Service
-            '0000181b-0000-1000-8000-00805f9b34fb', // Body Composition Service
-            '0000fff0-0000-1000-8000-00805f9b34fb', // Generic Custom Service
-            '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
-            '00001801-0000-1000-8000-00805f9b34fb', // Generic Attribute
-            'battery_service'
-          ]
+          optionalServices: knownServices
         });
 
         bluetoothStatus.textContent = 'Conectando...';
-
-        // Conectar ao GATT Server
         const server = await bluetoothDevice.gatt.connect();
 
-        // Tentar encontrar o serviço de peso
-        let service;
-        try {
-          service = await server.getPrimaryService('0000181d-0000-1000-8000-00805f9b34fb');
-        } catch (e) {
-          // Tentar serviço alternativo
+        // Obter todos os serviços disponíveis
+        const services = await server.getPrimaryServices();
+        console.log('🔧 Serviços encontrados:', services.length);
+
+        allCharacteristics = [];
+
+        // Explorar todos os serviços e características
+        for (const service of services) {
+          console.log('📦 Serviço:', service.uuid);
           try {
-            service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-          } catch (e2) {
-            // Listar todos os serviços disponíveis
-            const services = await server.getPrimaryServices();
-            if (services.length > 0) {
-              service = services[0];
-            } else {
-              throw new Error('Nenhum serviço encontrado');
+            const chars = await service.getCharacteristics();
+            for (const char of chars) {
+              console.log('  📋 Característica:', char.uuid, '| Propriedades:',
+                Object.keys(char.properties).filter(k => char.properties[k]).join(', '));
+              allCharacteristics.push(char);
+
+              // Inscrever em todas as características que suportam notify/indicate
+              if (char.properties.notify || char.properties.indicate) {
+                try {
+                  if (char.properties.notify) {
+                    await char.startNotifications();
+                  }
+                  char.addEventListener('characteristicvaluechanged', handleWeightData);
+                  console.log('  ✅ Inscrito em notificações');
+                } catch (e) {
+                  console.log('  ⚠️ Não foi possível inscrever:', e.message);
+                }
+              }
+            }
+          } catch (e) {
+            console.log('  ⚠️ Erro ao ler características:', e.message);
+          }
+        }
+
+        // Também fazer polling (leitura periódica) para balanças que não enviam notificações
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(async () => {
+          for (const char of allCharacteristics) {
+            if (char.properties.read) {
+              try {
+                const value = await char.readValue();
+                // Simular evento de mudança
+                handleWeightData({ target: { value } });
+              } catch (e) {
+                // Ignorar erros de leitura
+              }
             }
           }
-        }
-
-        // Encontrar a característica de peso
-        const characteristics = await service.getCharacteristics();
-
-        for (const char of characteristics) {
-          if (char.properties.notify || char.properties.indicate) {
-            bluetoothCharacteristic = char;
-            break;
-          }
-        }
-
-        if (!bluetoothCharacteristic) {
-          bluetoothCharacteristic = characteristics[0];
-        }
-
-        // Iniciar notificações
-        if (bluetoothCharacteristic.properties.notify) {
-          await bluetoothCharacteristic.startNotifications();
-          bluetoothCharacteristic.addEventListener('characteristicvaluechanged', handleWeightData);
-        }
+        }, 500); // Ler a cada 500ms
 
         // Atualizar UI
         conectarBalancaBtn.classList.add('connected');
-        bluetoothStatus.textContent = 'Balança conectada! Aguardando peso...';
+        bluetoothStatus.textContent = 'Balança conectada! Coloque o produto na balança...';
         bluetoothStatus.style.color = '#4CAF50';
 
         // Monitorar desconexão
@@ -1130,6 +1143,10 @@
           bluetoothStatus.textContent = 'Balança desconectada. Clique para reconectar.';
           bluetoothStatus.style.color = '#f44336';
           pesoInput.value = '';
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
         });
 
       } catch (error) {
@@ -1162,22 +1179,96 @@
       const value = event.target.value;
       const data = new Uint8Array(value.buffer);
 
-      // Interpretar dados - formato pode variar por balança
-      // Formato comum: peso em gramas ou kg como inteiro/float
-      let peso = 0;
+      // Debug: mostrar dados brutos recebidos
+      const hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.log('📊 Dados da balança (hex):', hexString);
+      console.log('📊 Dados da balança (dec):', Array.from(data).join(' '));
+      console.log('📊 Tamanho:', data.length, 'bytes');
 
-      if (data.length >= 2) {
-        // Tentar interpretar como peso em gramas (little-endian)
-        peso = (data[1] << 8) | data[0];
-        peso = peso / 1000; // Converter para kg
-      } else if (data.length === 1) {
-        peso = data[0] / 10;
+      let peso = 0;
+      let pesoEncontrado = false;
+
+      // Método 1: Formato Electrolux/balanças de cozinha (comum)
+      // Dados geralmente vêm como: [flags, peso_low, peso_high, ...]
+      if (data.length >= 3 && !pesoEncontrado) {
+        // Pular primeiro byte (flags) e ler peso como little-endian
+        const pesoGramas = (data[2] << 8) | data[1];
+        if (pesoGramas > 0 && pesoGramas < 50000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+          console.log('✅ Método 1 (Electrolux): ', peso, 'kg');
+        }
       }
 
-      // Validar peso
-      if (peso > 0 && peso < 50) {
+      // Método 2: Peso direto em 2 bytes (little-endian, gramas)
+      if (data.length >= 2 && !pesoEncontrado) {
+        const pesoGramas = (data[1] << 8) | data[0];
+        if (pesoGramas > 0 && pesoGramas < 50000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+          console.log('✅ Método 2 (2 bytes LE): ', peso, 'kg');
+        }
+      }
+
+      // Método 3: Peso em 2 bytes (big-endian, gramas)
+      if (data.length >= 2 && !pesoEncontrado) {
+        const pesoGramas = (data[0] << 8) | data[1];
+        if (pesoGramas > 0 && pesoGramas < 50000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+          console.log('✅ Método 3 (2 bytes BE): ', peso, 'kg');
+        }
+      }
+
+      // Método 4: Peso em 4 bytes (little-endian, centésimos de grama)
+      if (data.length >= 4 && !pesoEncontrado) {
+        const pesoRaw = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
+        if (pesoRaw > 0 && pesoRaw < 5000000) {
+          peso = pesoRaw / 100000;
+          pesoEncontrado = true;
+          console.log('✅ Método 4 (4 bytes): ', peso, 'kg');
+        }
+      }
+
+      // Método 5: Texto ASCII (algumas balanças enviam como string)
+      if (!pesoEncontrado) {
+        try {
+          const texto = new TextDecoder().decode(data);
+          const match = texto.match(/(\d+[.,]?\d*)/);
+          if (match) {
+            peso = parseFloat(match[1].replace(',', '.'));
+            if (peso > 0 && peso < 50) {
+              pesoEncontrado = true;
+              console.log('✅ Método 5 (ASCII): ', peso, 'kg');
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Método 6: Procurar peso em qualquer posição dos dados
+      if (!pesoEncontrado && data.length >= 2) {
+        for (let i = 0; i < data.length - 1; i++) {
+          const pesoGramas = (data[i + 1] << 8) | data[i];
+          // Peso válido entre 1g e 10kg (faixa típica de balança de cozinha)
+          if (pesoGramas >= 1 && pesoGramas <= 10000) {
+            peso = pesoGramas / 1000;
+            pesoEncontrado = true;
+            console.log('✅ Método 6 (scan): posição', i, '-', peso, 'kg');
+            break;
+          }
+        }
+      }
+
+      // Atualizar campo se peso válido encontrado
+      if (pesoEncontrado && peso > 0 && peso < 50) {
         pesoInput.value = peso.toFixed(3);
+        bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg`;
+        bluetoothStatus.style.color = '#4CAF50';
         atualizarBotaoSalvar();
+      } else {
+        console.log('⚠️ Peso não identificado nos dados');
+        // Mostrar dados brutos para debug
+        bluetoothStatus.innerHTML = `Dados recebidos: ${hexString}<br><small>Verifique console para debug</small>`;
       }
     }
 
