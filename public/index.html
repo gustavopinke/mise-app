@@ -366,45 +366,6 @@
       display: flex;
     }
 
-    .scanner-header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-      z-index: 1002;
-    }
-
-    .scanner-header h3 {
-      color: white;
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    #close-scanner {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    #close-scanner:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
     #scanner-reader {
       width: 100%;
       max-width: 600px;
@@ -417,10 +378,6 @@
     }
 
     .scan-status {
-      position: absolute;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.8);
       color: #66F7CC;
       padding: 12px 25px;
@@ -428,18 +385,37 @@
       font-size: 14px;
       font-weight: 600;
       white-space: nowrap;
-      z-index: 1002;
+      margin-top: 20px;
+      text-align: center;
     }
 
-    .scan-tips {
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255,255,255,0.7);
-      font-size: 12px;
-      text-align: center;
-      max-width: 80%;
+    #close-scanner {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: background 0.2s;
+      width: auto;
+      box-shadow: none;
+    }
+
+    #close-scanner:hover {
+      background: #d32f2f;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Rotação do scanner com orientação do dispositivo */
+    @media (orientation: landscape) {
+      #scanner-reader {
+        max-width: 80%;
+        max-height: 70vh;
+      }
     }
 
     /* Customizar estilo do html5-qrcode */
@@ -642,13 +618,9 @@
 
   <!-- CONTAINER DO SCANNER -->
   <div id="scanner-container">
-    <div class="scanner-header">
-      <h3>Scanner de Código de Barras</h3>
-      <button id="close-scanner">✕</button>
-    </div>
     <div id="scanner-reader"></div>
     <div class="scan-status" id="scan-status">Posicione o código de barras na área de leitura</div>
-    <div class="scan-tips">Mantenha o código de barras centralizado e bem iluminado</div>
+    <button id="close-scanner">Fechar Câmera</button>
   </div>
 
   <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
