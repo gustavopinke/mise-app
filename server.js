@@ -89,8 +89,8 @@ function carregarBase() {
   const agora = Date.now();
 
   // Retorna cache se ainda válido
-  if (cacheBase && cacheBaseMap && (agora - ultimaAtualizacao) < CACHE_TIMEOUT) {
-    return { produtos: cacheBase, map: cacheBaseMap };
+  if (cacheBase && cacheBaseMap && cacheIndiceNome && (agora - ultimaAtualizacao) < CACHE_TIMEOUT) {
+    return { produtos: cacheBase, map: cacheBaseMap, indiceNome: cacheIndiceNome };
   }
 
   const csvPath = path.join(projectRoot, "data", "PARA_BUSCAR_DO_SITE.csv");

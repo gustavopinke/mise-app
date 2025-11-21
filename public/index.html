@@ -861,6 +861,13 @@
       try {
         console.log("🔍 Iniciando busca para código:", codigo);
         const resp = await fetch(`/consulta/${codigo}`);
+
+        // Verificar se a resposta é JSON válido
+        const contentType = resp.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Servidor ainda iniciando. Aguarde alguns segundos e tente novamente.');
+        }
+
         const data = await resp.json();
 
         console.log("📦 Resposta recebida:", data);
