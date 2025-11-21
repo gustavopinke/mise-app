@@ -708,9 +708,12 @@ app.get("/api/buscar-por-nome/:termo", (req, res) => {
     if (resultados.length >= 10) break;
     const p = produtos[idx];
     if (p) {
-      // Verificar se o termo completo está no nome (para maior precisão)
+      // Verificar se TODAS as palavras estão no nome (não precisa estar juntas)
       const nome = (p.produto || p.nome || "").toLowerCase();
-      if (nome.includes(termo)) {
+      const todasPalavrasPresentes = palavras.length === 0
+        ? nome.includes(termo)
+        : palavras.every(palavra => nome.includes(palavra));
+      if (todasPalavrasPresentes) {
         resultados.push(p);
       }
     }
