@@ -217,7 +217,7 @@
     /* Header com Logo */
     .header-logo {
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .header-logo img {
@@ -226,13 +226,13 @@
     }
 
     .header-slogan {
-      font-size: 16px;
+      font-size: 18px;
       color: #222;
       font-weight: 400;
-      margin-top: 8px;
+      margin-top: 4px;
       margin-bottom: 0;
-      letter-spacing: -0.5px;
-      line-height: 1.4;
+      letter-spacing: 0.5px;
+      line-height: 1.3;
     }
 
     .clear-button {
@@ -805,31 +805,66 @@
       }
     }
 
-    // SCANNER DE CÂMERA
+    // SCANNER DE CÂMERA - Configurações otimizadas para melhor leitura
     document.getElementById("scanner").onclick = async () => {
       try {
         videoContainer.classList.add('active');
         scanStatus.textContent = "Iniciando câmera...";
 
-        codeReader = new ZXing.BrowserBarcodeReader();
+        // Usar MultiFormatReader para suportar mais formatos de código
+        const hints = new Map();
+        // Formatos de código de barras 1D mais comuns
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+          ZXing.BarcodeFormat.EAN_13,
+          ZXing.BarcodeFormat.EAN_8,
+          ZXing.BarcodeFormat.UPC_A,
+          ZXing.BarcodeFormat.UPC_E,
+          ZXing.BarcodeFormat.CODE_128,
+          ZXing.BarcodeFormat.CODE_39,
+          ZXing.BarcodeFormat.ITF
+        ]);
+        // Tentar mais vezes por frame
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
+        codeReader = new ZXing.BrowserMultiFormatReader(hints);
+        // Configurar intervalo de scan mais frequente (100ms = 10 scans/segundo)
+        codeReader.timeBetweenDecodingAttempts = 100;
+
+        // Configurações de câmera otimizadas para foco e nitidez
         const constraints = {
           video: {
             facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            // Configurações avançadas para melhor foco
+            focusMode: { ideal: 'continuous' },
+            exposureMode: { ideal: 'continuous' },
+            whiteBalanceMode: { ideal: 'continuous' }
           }
         };
 
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
 
+        // Tentar aplicar foco contínuo após obter o stream
+        try {
+          const track = stream.getVideoTracks()[0];
+          const capabilities = track.getCapabilities();
+          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+            await track.applyConstraints({
+              advanced: [{ focusMode: 'continuous' }]
+            });
+          }
+        } catch (focusErr) {
+          console.log('Foco automático não disponível:', focusErr);
+        }
+
         // Aguardar o vídeo carregar antes de iniciar
         await video.play();
 
         scanStatus.textContent = "Posicione o código de barras no centro";
 
-        // Decodificar código de barras
+        // Decodificar código de barras com configurações otimizadas
         codeReader.decodeFromVideoDevice(null, video, (result, err) => {
           if (result) {
             // Som de sucesso (opcional, pode ser removido se não quiser)
