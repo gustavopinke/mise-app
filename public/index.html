@@ -798,16 +798,23 @@
       let imagemHTML = '';
       if (produto.foto) {
         console.log('📸 Foto do produto:', produto.foto);
+        console.log('📸 Tipo da foto:', typeof produto.foto);
         // produto.foto pode ser um objeto {fonte, url, filename} ou uma string
         let fotoUrl = '';
         if (typeof produto.foto === 'object' && produto.foto.url) {
           fotoUrl = produto.foto.url;
+          console.log('📸 URL da foto (objeto):', fotoUrl);
         } else if (typeof produto.foto === 'string') {
           fotoUrl = `/fotos/${produto.foto}`;
+          console.log('📸 URL da foto (string):', fotoUrl);
         }
 
         if (fotoUrl) {
-          imagemHTML = `<img src="${fotoUrl}" class="produto-imagem" alt="${produto.produto || produto.nome}" onclick="abrirImagemModal('${fotoUrl}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
+          // Escapar aspas no nome do produto para não quebrar o HTML
+          const altText = (produto.produto || produto.nome || 'Produto').replace(/"/g, '&quot;');
+          const fotoUrlEscaped = fotoUrl.replace(/'/g, "\\'");
+          imagemHTML = `<img src="${fotoUrl}" class="produto-imagem" alt="${altText}" onclick="abrirImagemModal('${fotoUrlEscaped}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
+          console.log('📸 Imagem HTML gerado com sucesso');
         }
       } else {
         console.log('⚠️ Nenhuma foto disponível para o produto');
@@ -859,6 +866,8 @@
         const data = await resp.json();
 
         console.log("📦 Resposta recebida:", data);
+        console.log("📦 Produto:", data.produto);
+        console.log("📦 Foto no produto:", data.produto?.foto);
 
         if (!data.ok) {
           resultado.innerHTML = `

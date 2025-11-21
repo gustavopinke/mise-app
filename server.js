@@ -636,10 +636,13 @@ app.get("/consulta/:codigo", async (req, res) => {
 
     // Buscar foto do produto
     const foto = await buscarFoto(codigo);
+    console.log("📸 Foto retornada pela busca:", JSON.stringify(foto));
     if (foto) {
       encontradoLocal.foto = foto;
+      console.log("📸 Foto adicionada ao produto:", JSON.stringify(encontradoLocal.foto));
     }
 
+    console.log("📦 Enviando produto:", JSON.stringify(encontradoLocal));
     return res.json({
       ok: true,
       origem: "local",
