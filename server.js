@@ -23,7 +23,8 @@ const PORT = process.env.PORT || 10000;
 
 // Cache em memória otimizado (economizar RAM no Render)
 let cacheBase = null;
-let cacheBaseMap = null; // Índice Map para busca O(1)
+let cacheBaseMap = null; // Índice Map para busca O(1) por código
+let cacheIndiceNome = null; // Índice invertido para busca por nome O(1)
 let ultimaAtualizacao = 0;
 const CACHE_TIMEOUT = 300000; // 5 minutos - cache mais longo, menos recargas
 
@@ -138,13 +139,17 @@ function carregarBase() {
       }
     });
 
+    // Criar índice invertido para busca por nome
+    const indiceNome = criarIndiceNome(produtos);
+
     // Atualizar cache
     cacheBase = produtos;
     cacheBaseMap = map;
+    cacheIndiceNome = indiceNome;
     ultimaAtualizacao = agora;
 
-    console.log(`✅ Base carregada: ${produtos.length} produtos indexados`);
-    return { produtos, map };
+    console.log(`✅ Base carregada: ${produtos.length} produtos indexados com índice de nomes`);
+    return { produtos, map, indiceNome };
   }
 
   // Se não tiver CSV, tenta XLSX
@@ -179,15 +184,56 @@ function carregarBase() {
       }
     });
 
+    // Criar índice invertido para busca por nome
+    const indiceNome = criarIndiceNome(produtos);
+
     // Atualizar cache
     cacheBase = produtos;
     cacheBaseMap = map;
+    cacheIndiceNome = indiceNome;
     ultimaAtualizacao = agora;
 
-    console.log(`✅ Base carregada: ${produtos.length} produtos indexados`);
+    console.log(`✅ Base carregada: ${produtos.length} produtos indexados com índice de nomes`);
   }
 
-  return { produtos, map: cacheBaseMap || new Map() };
+  return { produtos, map: cacheBaseMap || new Map(), indiceNome: cacheIndiceNome || new Map() };
+}
+
+// -------------------------------------------
+// CRIAR ÍNDICE INVERTIDO PARA BUSCA POR NOME
+// -------------------------------------------
+function criarIndiceNome(produtos) {
+  console.log("📇 Criando índice de nomes...");
+  const inicio = Date.now();
+  const indice = new Map();
+
+  produtos.forEach((produto, idx) => {
+    const nome = (produto.produto || produto.nome || "").toLowerCase();
+    if (!nome) return;
+
+    // Extrair palavras (mínimo 2 caracteres)
+    const palavras = nome.split(/\s+/).filter(p => p.length >= 2);
+
+    palavras.forEach(palavra => {
+      // Indexar a palavra completa
+      if (!indice.has(palavra)) {
+        indice.set(palavra, new Set());
+      }
+      indice.get(palavra).add(idx);
+
+      // Indexar prefixos para autocomplete (mínimo 2 caracteres)
+      for (let i = 2; i < palavra.length; i++) {
+        const prefixo = palavra.substring(0, i);
+        if (!indice.has(prefixo)) {
+          indice.set(prefixo, new Set());
+        }
+        indice.get(prefixo).add(idx);
+      }
+    });
+  });
+
+  console.log(`📇 Índice criado: ${indice.size} termos em ${Date.now() - inicio}ms`);
+  return indice;
 }
 
 // -------------------------------------------
@@ -616,7 +662,7 @@ function salvarProduto(codigo, nome) {
 }
 
 // -------------------------------------------
-// API BUSCA POR NOME (autocomplete)
+// API BUSCA POR NOME (autocomplete) - OTIMIZADA COM ÍNDICE
 // -------------------------------------------
 app.get("/api/buscar-por-nome/:termo", (req, res) => {
   const termo = (req.params.termo || "").toLowerCase().trim();
@@ -625,17 +671,52 @@ app.get("/api/buscar-por-nome/:termo", (req, res) => {
     return res.json({ ok: true, produtos: [] });
   }
 
-  console.log("🔍 Buscando produtos por nome:", termo);
+  const inicio = Date.now();
+  console.log("🔍 Buscando produtos por nome (indexado):", termo);
 
-  const { produtos } = carregarBase();
+  const { produtos, indiceNome } = carregarBase();
 
-  // Buscar produtos que contenham o termo no nome
-  const resultados = produtos.filter(p => {
-    const nome = (p.produto || p.nome || "").toLowerCase();
-    return nome.includes(termo);
-  }).slice(0, 10); // Limitar a 10 resultados
+  // Busca otimizada usando índice invertido
+  let indicesEncontrados = new Set();
+  const palavras = termo.split(/\s+/).filter(p => p.length >= 2);
 
-  console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}"`);
+  if (palavras.length === 0) {
+    // Termo muito curto, usar busca direta no índice
+    if (indiceNome.has(termo)) {
+      indicesEncontrados = indiceNome.get(termo);
+    }
+  } else {
+    // Interseção dos resultados de todas as palavras
+    palavras.forEach((palavra, idx) => {
+      const matches = indiceNome.get(palavra);
+      if (matches) {
+        if (idx === 0) {
+          indicesEncontrados = new Set(matches);
+        } else {
+          // Interseção com resultados anteriores
+          indicesEncontrados = new Set([...indicesEncontrados].filter(x => matches.has(x)));
+        }
+      } else if (idx === 0) {
+        indicesEncontrados = new Set();
+      }
+    });
+  }
+
+  // Converter índices em produtos (máximo 10)
+  const resultados = [];
+  for (const idx of indicesEncontrados) {
+    if (resultados.length >= 10) break;
+    const p = produtos[idx];
+    if (p) {
+      // Verificar se o termo completo está no nome (para maior precisão)
+      const nome = (p.produto || p.nome || "").toLowerCase();
+      if (nome.includes(termo)) {
+        resultados.push(p);
+      }
+    }
+  }
+
+  console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}" em ${Date.now() - inicio}ms`);
 
   res.json({
     ok: true,
