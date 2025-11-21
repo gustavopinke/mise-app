@@ -217,23 +217,31 @@
     /* Header com Logo */
     .header-logo {
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 25px;
     }
 
     .header-logo img {
       max-width: 130px;
       height: auto;
-      margin-bottom: 0;
+      margin-bottom: 8px;
     }
 
     .header-slogan {
       font-size: 17px;
       color: #222;
       font-weight: 500;
-      margin-top: 2px;
+      margin-top: 0;
       margin-bottom: 0;
       letter-spacing: 0.3px;
       line-height: 1.2;
+    }
+
+    .scanner-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 15px 0;
+      text-align: center;
     }
 
     .clear-button {
@@ -339,84 +347,133 @@
       margin: 8px 0;
     }
 
-    #video-container {
+    #scanner-container {
       display: none;
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.95);
+      background: rgba(0, 0, 0, 0.98);
       z-index: 1000;
-      justify-content: center;
-      align-items: center;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
-    #video-container.active {
+    #scanner-container.active {
       display: flex;
     }
 
-    .camera-wrapper {
-      position: relative;
-      width: 95%;
-      max-width: 700px;
-      aspect-ratio: 4/3;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 30px rgba(102, 247, 204, 0.3);
-    }
-
-    #video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    #close-camera {
+    .scanner-header {
       position: absolute;
-      bottom: 2%;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+      z-index: 1002;
+    }
+
+    .scanner-header h3 {
+      color: white;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    #close-scanner {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    #close-scanner:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    #scanner-reader {
+      width: 100%;
+      max-width: 600px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #scanner-reader video {
+      border-radius: 12px;
+    }
+
+    .scan-status {
+      position: absolute;
+      bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       color: #66F7CC;
-      border: 2px solid #66F7CC;
-      padding: 12px 30px;
+      padding: 12px 25px;
       border-radius: 25px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 1001;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      z-index: 1002;
     }
 
-    .scanner-frame {
+    .scan-tips {
       position: absolute;
-      top: 45%;
+      bottom: 40px;
       left: 50%;
-      transform: translate(-50%, -50%);
-      width: 90%;
-      max-width: 450px;
-      aspect-ratio: 2/1;
-      border: 4px solid #66F7CC;
-      border-radius: 15px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
-      pointer-events: none;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      text-align: center;
+      max-width: 80%;
     }
 
-    .scanner-line {
-      position: absolute;
-      top: 45%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 86%;
-      max-width: 430px;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, #66F7CC, transparent);
-      box-shadow: 0 0 15px #66F7CC, 0 0 30px #66F7CC;
-      animation: scan 2s ease-in-out infinite;
-      pointer-events: none;
+    /* Customizar estilo do html5-qrcode */
+    #scanner-reader__scan_region {
+      background: transparent !important;
+    }
+
+    #scanner-reader__dashboard_section_csr button {
+      background: #66F7CC !important;
+      color: #000 !important;
+      border: none !important;
+      padding: 10px 20px !important;
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+    }
+
+    #scanner-reader__dashboard_section_swaplink {
+      color: #66F7CC !important;
+      text-decoration: none !important;
+    }
+
+    /* Esconder textos padrão da biblioteca */
+    #scanner-reader__header_message,
+    #scanner-reader__status_span {
+      display: none !important;
+    }
+
+    #scanner-reader__scan_region > br,
+    #scanner-reader__scan_region > img {
+      display: none !important;
+    }
+
+    /* Estilo da área de leitura */
+    #qr-shaded-region {
+      border-color: #66F7CC !important;
     }
 
     .produto-imagem {
@@ -474,33 +531,8 @@
       z-index: 2001;
     }
 
-    @keyframes scan {
-      0%, 100% {
-        transform: translate(-50%, -50%) translateY(-80px);
-        opacity: 0.3;
-      }
-      50% {
-        transform: translate(-50%, -50%) translateY(80px);
-        opacity: 1;
-      }
-    }
-
-    .scan-status {
-      position: absolute;
-      bottom: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: #66F7CC;
-      padding: 12px 25px;
-      border-radius: 25px;
-      font-size: 16px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
   </style>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 
 <body>
@@ -514,7 +546,7 @@
         <p class="header-slogan">Prepare-se para o sucesso</p>
       </div>
 
-      <h2>Scanner de Códigos de Barras</h2>
+      <p class="scanner-title">Scanner de Códigos de Barras</p>
 
       <!-- INPUT CÓDIGO DE BARRAS -->
       <div class="input-wrapper">
@@ -607,15 +639,15 @@
     </div>
   </div>
 
-  <!-- CONTAINER DA CÂMERA -->
-  <div id="video-container">
-    <button id="close-camera">✕ Fechar</button>
-    <div class="camera-wrapper">
-      <video id="video" playsinline></video>
-      <div class="scanner-frame"></div>
-      <div class="scanner-line"></div>
-      <div class="scan-status">Posicione o código de barras no centro</div>
+  <!-- CONTAINER DO SCANNER -->
+  <div id="scanner-container">
+    <div class="scanner-header">
+      <h3>Scanner de Código de Barras</h3>
+      <button id="close-scanner">✕</button>
     </div>
+    <div id="scanner-reader"></div>
+    <div class="scan-status" id="scan-status">Posicione o código de barras na área de leitura</div>
+    <div class="scan-tips">Mantenha o código de barras centralizado e bem iluminado</div>
   </div>
 
   <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
@@ -627,14 +659,14 @@
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
-    const videoContainer = document.getElementById("video-container");
-    const video = document.getElementById("video");
+    const scannerContainer = document.getElementById("scanner-container");
+    const scannerReader = document.getElementById("scanner-reader");
     const imageModal = document.getElementById("image-modal");
     const modalImage = document.getElementById("modal-image");
-    const scanStatus = document.querySelector(".scan-status");
+    const scanStatus = document.getElementById("scan-status");
     const clearButton = document.getElementById("clear-button");
-    let codeReader = null;
-    let stream = null;
+    let html5QrCode = null;
+    let isScanning = false;
     let ultimaBusca = "";
     let buscaTimeout = null;
 
@@ -815,146 +847,174 @@
       }
     }
 
-    // SCANNER DE CÂMERA - Otimizado para leitura rápida
+    // SCANNER DE CÂMERA - Usando html5-qrcode (solução profissional)
     document.getElementById("scanner").onclick = async () => {
       try {
-        videoContainer.classList.add('active');
+        scannerContainer.classList.add('active');
         scanStatus.textContent = "Iniciando câmera...";
+        scanStatus.style.background = "rgba(0, 0, 0, 0.8)";
 
-        // Configurar leitor de código de barras
-        const hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-          ZXing.BarcodeFormat.EAN_13,
-          ZXing.BarcodeFormat.EAN_8,
-          ZXing.BarcodeFormat.UPC_A,
-          ZXing.BarcodeFormat.UPC_E,
-          ZXing.BarcodeFormat.CODE_128,
-          ZXing.BarcodeFormat.CODE_39,
-          ZXing.BarcodeFormat.ITF
-        ]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        // Criar instância do scanner se não existir
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("scanner-reader");
+        }
 
-        codeReader = new ZXing.BrowserMultiFormatReader(hints);
-        codeReader.timeBetweenDecodingAttempts = 100;
-
-        // Configurações de câmera simples e compatíveis
-        const constraints = {
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+        // Configuração otimizada para leitura rápida de códigos de barras
+        const config = {
+          fps: 15, // Frames por segundo para detecção
+          qrbox: { width: 300, height: 150 }, // Área de leitura retangular (ideal para códigos de barras)
+          aspectRatio: 1.777778, // 16:9
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.ITF,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true // Usa API nativa quando disponível (mais rápido)
           }
         };
 
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
+        // Callback quando código é detectado
+        const onScanSuccess = (decodedText, decodedResult) => {
+          console.log(`✅ Código detectado: ${decodedText}`);
 
-        // Tentar aplicar foco contínuo (se disponível)
-        try {
-          const track = stream.getVideoTracks()[0];
-          const capabilities = track.getCapabilities();
-
-          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-            await track.applyConstraints({
-              advanced: [{ focusMode: 'continuous' }]
-            });
+          // Vibrar dispositivo
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
           }
-        } catch (e) {
-          // Ignorar - foco automático não disponível
+
+          // Som de sucesso
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = 1200;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+          } catch (e) {}
+
+          input.value = decodedText;
+          clearButton.classList.add('visible');
+          scanStatus.textContent = "✓ Código detectado!";
+          scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
+
+          // Fechar scanner e buscar
+          setTimeout(() => {
+            fecharScanner();
+            buscar();
+          }, 400);
+        };
+
+        // Callback de erro (ignorar erros de leitura normais)
+        const onScanError = (errorMessage) => {
+          // Erros normais de frames sem código - ignorar silenciosamente
+        };
+
+        // Obter câmera traseira (preferencial) com alta resolução
+        const cameras = await Html5Qrcode.getCameras();
+
+        if (!cameras || cameras.length === 0) {
+          throw new Error('Nenhuma câmera encontrada');
         }
 
-        await video.play();
-        scanStatus.textContent = "Posicione o código de barras no centro";
+        // Preferir câmera traseira
+        let cameraId = cameras[0].id;
+        for (const camera of cameras) {
+          const label = camera.label.toLowerCase();
+          if (label.includes('back') || label.includes('traseira') || label.includes('rear') || label.includes('environment')) {
+            cameraId = camera.id;
+            break;
+          }
+        }
 
-        // Decodificar código de barras
-        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-          if (result) {
-            // Vibrar dispositivo
-            if (navigator.vibrate) {
-              navigator.vibrate(100);
+        // Iniciar scanner
+        await html5QrCode.start(
+          cameraId,
+          config,
+          onScanSuccess,
+          onScanError
+        );
+
+        isScanning = true;
+        scanStatus.textContent = "Posicione o código de barras na área de leitura";
+
+        // Tentar aplicar zoom e foco contínuo (se disponível)
+        try {
+          const videoElement = document.querySelector('#scanner-reader video');
+          if (videoElement && videoElement.srcObject) {
+            const track = videoElement.srcObject.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+
+            const advancedConstraints = [];
+
+            // Aplicar foco contínuo
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              advancedConstraints.push({ focusMode: 'continuous' });
             }
 
-            // Som de sucesso
-            try {
-              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              oscillator.frequency.value = 1000;
-              oscillator.type = 'sine';
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-              oscillator.start(audioContext.currentTime);
-              oscillator.stop(audioContext.currentTime + 0.1);
-            } catch (e) {}
+            // Aplicar zoom leve para melhor leitura (se disponível)
+            if (capabilities.zoom && capabilities.zoom.max > 1) {
+              const optimalZoom = Math.min(1.5, capabilities.zoom.max);
+              advancedConstraints.push({ zoom: optimalZoom });
+            }
 
-            input.value = result.text;
-            scanStatus.textContent = "✓ Código detectado!";
-            scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
-
-            setTimeout(() => {
-              fecharCamera();
-              buscar();
-            }, 300);
+            if (advancedConstraints.length > 0) {
+              await track.applyConstraints({ advanced: advancedConstraints });
+              console.log('📷 Configurações de câmera aplicadas:', advancedConstraints);
+            }
           }
-        });
+        } catch (e) {
+          console.log('⚠️ Não foi possível aplicar configurações avançadas de câmera');
+        }
 
       } catch (err) {
-        console.error('Erro ao acessar câmera:', err);
+        console.error('❌ Erro ao acessar câmera:', err);
 
-        // Se falhar, tentar configuração mais simples
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          video.srcObject = stream;
-          await video.play();
-          scanStatus.textContent = "Posicione o código de barras no centro";
-
-          codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-            if (result) {
-              if (navigator.vibrate) navigator.vibrate(100);
-              input.value = result.text;
-              scanStatus.textContent = "✓ Código detectado!";
-              setTimeout(() => {
-                fecharCamera();
-                buscar();
-              }, 300);
-            }
-          });
-          return;
-        } catch (e) {
-          let mensagem = 'Não foi possível acessar a câmera.';
-          if (err.name === 'NotAllowedError') {
-            mensagem = 'Permissão de câmera negada. Permita o acesso nas configurações.';
-          } else if (err.name === 'NotFoundError') {
-            mensagem = 'Nenhuma câmera encontrada.';
-          }
-          alert(mensagem);
-          fecharCamera();
+        let mensagem = 'Não foi possível acessar a câmera.';
+        if (err.name === 'NotAllowedError') {
+          mensagem = 'Permissão de câmera negada. Permita o acesso nas configurações do navegador.';
+        } else if (err.name === 'NotFoundError' || err.message.includes('Nenhuma câmera')) {
+          mensagem = 'Nenhuma câmera encontrada no dispositivo.';
+        } else if (err.name === 'NotReadableError') {
+          mensagem = 'Câmera em uso por outro aplicativo.';
         }
+
+        alert(mensagem);
+        fecharScanner();
       }
     };
 
-    document.getElementById("close-camera").onclick = fecharCamera;
+    document.getElementById("close-scanner").onclick = fecharScanner;
 
-    // Fechar câmera ao pressionar ESC
+    // Fechar scanner ao pressionar ESC
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && videoContainer.classList.contains('active')) {
-        fecharCamera();
+      if (e.key === 'Escape' && scannerContainer.classList.contains('active')) {
+        fecharScanner();
       }
     });
 
-    function fecharCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
+    async function fecharScanner() {
+      if (html5QrCode && isScanning) {
+        try {
+          await html5QrCode.stop();
+        } catch (e) {
+          console.log('Erro ao parar scanner:', e);
+        }
+        isScanning = false;
       }
-      if (codeReader) {
-        codeReader.reset();
-        codeReader = null;
-      }
-      video.srcObject = null;
-      videoContainer.classList.remove('active');
-      scanStatus.textContent = "Posicione o código de barras no centro";
+      scannerContainer.classList.remove('active');
+      scanStatus.textContent = "Posicione o código de barras na área de leitura";
+      scanStatus.style.background = "rgba(0, 0, 0, 0.8)";
     }
 
     // ========================================
