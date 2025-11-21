@@ -217,8 +217,8 @@
     /* Header com Logo */
     .header-logo {
       text-align: center;
-      margin-bottom: 20px;
-      margin-top: -5px;
+      margin-bottom: 10px;
+      margin-top: -15px;
     }
 
     .header-logo img {
@@ -508,6 +508,58 @@
       z-index: 2001;
     }
 
+    /* Autocomplete de busca por nome */
+    .busca-nome-container {
+      position: relative;
+      margin-top: 15px;
+    }
+
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #000;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+
+    .autocomplete-dropdown.visible {
+      display: block;
+    }
+
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-item:hover {
+      background: #f0f0f0;
+    }
+
+    .autocomplete-item-nome {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .autocomplete-item-codigo {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+
   </style>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -537,13 +589,27 @@
         <button class="clear-button" id="clear-button">✕</button>
       </div>
 
+      <!-- BUSCA POR NOME -->
+      <div class="busca-nome-container">
+        <label class="field-label">Buscar por nome do produto</label>
+        <div class="input-wrapper">
+          <input
+              id="busca-nome"
+              type="text"
+              placeholder="Digite o nome do produto..."
+          />
+          <button class="clear-button" id="clear-busca-nome">✕</button>
+        </div>
+        <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+      </div>
+
       <!-- TOGGLE PESAGEM -->
       <div class="toggle-container">
         <span class="toggle-label">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
           </svg>
-          Balança Bluetooth
+          Pesar produto aberto
         </span>
         <label class="toggle-switch">
           <input type="checkbox" id="toggle-pesagem">
@@ -1123,6 +1189,7 @@
           ultimoPesoRecebido = 0;
           pesoEstavel = 0;
           pesoConfirmado = false;
+          ultimoPesoConfirmado = 0;
           if (pollingInterval) {
             clearInterval(pollingInterval);
             pollingInterval = null;
@@ -1158,8 +1225,10 @@
     let pesoEstavel = 0;
     let tempoInicioEstabilizacao = 0;
     let pesoConfirmado = false;
+    let ultimoPesoConfirmado = 0;
     const TEMPO_ESTABILIZACAO = 2000; // 2 segundos
     const TOLERANCIA_PESO = 0.005; // 5 gramas de tolerância
+    const TOLERANCIA_MUDANCA = 0.010; // 10 gramas para detectar mudança após confirmação
     const PESO_MAXIMO = 10; // 10kg máximo (balança de cozinha)
 
     // Processar dados de peso da balança
@@ -1220,51 +1289,67 @@
       if (pesoEncontrado && peso > 0 && peso <= PESO_MAXIMO) {
         const agora = Date.now();
 
-        // Verificar se peso está estável (dentro da tolerância)
-        if (Math.abs(peso - pesoEstavel) <= TOLERANCIA_PESO) {
-          // Peso estável - verificar tempo
-          const tempoEstavel = agora - tempoInicioEstabilizacao;
-
-          if (tempoEstavel >= TEMPO_ESTABILIZACAO && !pesoConfirmado) {
-            // Peso estável por 2 segundos - CONFIRMAR!
-            pesoConfirmado = true;
+        // Se já confirmou, verificar se o peso mudou significativamente (mexeu na balança)
+        if (pesoConfirmado) {
+          if (Math.abs(peso - ultimoPesoConfirmado) > TOLERANCIA_MUDANCA) {
+            // Peso mudou após confirmação - voltar a medir!
+            pesoConfirmado = false;
+            pesoEstavel = peso;
+            tempoInicioEstabilizacao = agora;
             pesoInput.value = peso.toFixed(3);
-            bluetoothStatus.innerHTML = `<strong>Peso confirmado: ${peso.toFixed(3)} kg</strong>`;
-            bluetoothStatus.style.color = '#4CAF50';
-            atualizarBotaoSalvar();
-
-            // Feedback visual e sonoro
-            try {
-              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              oscillator.frequency.value = 800;
-              oscillator.type = 'sine';
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-              oscillator.start(audioContext.currentTime);
-              oscillator.stop(audioContext.currentTime + 0.2);
-            } catch (e) {}
-
-            if (navigator.vibrate) navigator.vibrate(200);
-
-          } else if (!pesoConfirmado) {
-            // Ainda estabilizando - mostrar progresso
-            const progresso = Math.min(100, (tempoEstavel / TEMPO_ESTABILIZACAO) * 100);
+            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+            bluetoothStatus.style.color = '#666';
+          } else {
+            // Peso ainda estável após confirmação - manter confirmado mas atualizar display
             pesoInput.value = peso.toFixed(3);
-            bluetoothStatus.textContent = `Estabilizando... ${progresso.toFixed(0)}%`;
-            bluetoothStatus.style.color = '#FF9800';
           }
         } else {
-          // Peso mudou - resetar estabilização
-          pesoEstavel = peso;
-          tempoInicioEstabilizacao = agora;
-          pesoConfirmado = false;
-          pesoInput.value = peso.toFixed(3);
-          bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
-          bluetoothStatus.style.color = '#666';
+          // Ainda não confirmou - verificar estabilização
+          if (Math.abs(peso - pesoEstavel) <= TOLERANCIA_PESO) {
+            // Peso estável - verificar tempo
+            const tempoEstavel = agora - tempoInicioEstabilizacao;
+
+            if (tempoEstavel >= TEMPO_ESTABILIZACAO) {
+              // Peso estável por 2 segundos - CONFIRMAR!
+              pesoConfirmado = true;
+              ultimoPesoConfirmado = peso;
+              pesoInput.value = peso.toFixed(3);
+              bluetoothStatus.innerHTML = `<strong>Peso confirmado: ${peso.toFixed(3)} kg</strong>`;
+              bluetoothStatus.style.color = '#4CAF50';
+              atualizarBotaoSalvar();
+
+              // Feedback visual e sonoro
+              try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+              } catch (e) {}
+
+              if (navigator.vibrate) navigator.vibrate(200);
+
+            } else {
+              // Ainda estabilizando - mostrar progresso
+              const progresso = Math.min(100, (tempoEstavel / TEMPO_ESTABILIZACAO) * 100);
+              pesoInput.value = peso.toFixed(3);
+              bluetoothStatus.textContent = `Estabilizando... ${progresso.toFixed(0)}%`;
+              bluetoothStatus.style.color = '#FF9800';
+            }
+          } else {
+            // Peso mudou - resetar estabilização
+            pesoEstavel = peso;
+            tempoInicioEstabilizacao = agora;
+            pesoInput.value = peso.toFixed(3);
+            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+            bluetoothStatus.style.color = '#666';
+          }
         }
 
         ultimoPesoRecebido = peso;
@@ -1299,6 +1384,92 @@
       originalMostrarProduto(produto, origem);
       atualizarBotaoSalvar();
     };
+
+    // ========================================
+    // BUSCA POR NOME COM AUTOCOMPLETE
+    // ========================================
+    const buscaNomeInput = document.getElementById('busca-nome');
+    const clearBuscaNomeBtn = document.getElementById('clear-busca-nome');
+    const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
+    let buscaNomeTimeout = null;
+
+    // Mostrar/esconder botão X da busca por nome
+    buscaNomeInput.addEventListener('input', () => {
+      if (buscaNomeInput.value.length > 0) {
+        clearBuscaNomeBtn.classList.add('visible');
+      } else {
+        clearBuscaNomeBtn.classList.remove('visible');
+        autocompleteDropdown.classList.remove('visible');
+      }
+
+      // Debounce para busca
+      if (buscaNomeTimeout) clearTimeout(buscaNomeTimeout);
+
+      if (buscaNomeInput.value.length >= 2) {
+        buscaNomeTimeout = setTimeout(() => {
+          buscarPorNome(buscaNomeInput.value);
+        }, 300);
+      } else {
+        autocompleteDropdown.classList.remove('visible');
+      }
+    });
+
+    // Limpar busca por nome
+    clearBuscaNomeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      buscaNomeInput.value = '';
+      clearBuscaNomeBtn.classList.remove('visible');
+      autocompleteDropdown.classList.remove('visible');
+      buscaNomeInput.focus();
+    });
+
+    // Buscar produtos por nome
+    async function buscarPorNome(termo) {
+      try {
+        const resp = await fetch(`/api/buscar-por-nome/${encodeURIComponent(termo)}`);
+        const data = await resp.json();
+
+        if (data.ok && data.produtos.length > 0) {
+          autocompleteDropdown.innerHTML = data.produtos.map(p => `
+            <div class="autocomplete-item" data-codigo="${p.codigo}" data-nome="${p.nome}">
+              <div class="autocomplete-item-nome">${p.nome}</div>
+              <div class="autocomplete-item-codigo">Código: ${p.codigo}</div>
+            </div>
+          `).join('');
+          autocompleteDropdown.classList.add('visible');
+
+          // Adicionar eventos de clique
+          autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const codigo = item.dataset.codigo;
+              const nome = item.dataset.nome;
+
+              // Preencher o código de barras e buscar
+              input.value = codigo;
+              clearButton.classList.add('visible');
+              buscaNomeInput.value = nome;
+              autocompleteDropdown.classList.remove('visible');
+
+              // Buscar o produto
+              buscar();
+            });
+          });
+        } else {
+          autocompleteDropdown.innerHTML = '<div class="autocomplete-item"><div class="autocomplete-item-nome" style="color: #999;">Nenhum produto encontrado</div></div>';
+          autocompleteDropdown.classList.add('visible');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar por nome:', error);
+        autocompleteDropdown.classList.remove('visible');
+      }
+    }
+
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.busca-nome-container')) {
+        autocompleteDropdown.classList.remove('visible');
+      }
+    });
 
     // Salvar no inventário
     salvarInventarioBtn.addEventListener('click', async () => {

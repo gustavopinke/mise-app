@@ -584,6 +584,39 @@ function salvarProduto(codigo, nome) {
 }
 
 // -------------------------------------------
+// API BUSCA POR NOME (autocomplete)
+// -------------------------------------------
+app.get("/api/buscar-por-nome/:termo", (req, res) => {
+  const termo = (req.params.termo || "").toLowerCase().trim();
+
+  if (!termo || termo.length < 2) {
+    return res.json({ ok: true, produtos: [] });
+  }
+
+  console.log("🔍 Buscando produtos por nome:", termo);
+
+  const { produtos } = carregarBase();
+
+  // Buscar produtos que contenham o termo no nome
+  const resultados = produtos.filter(p => {
+    const nome = (p.produto || p.nome || "").toLowerCase();
+    return nome.includes(termo);
+  }).slice(0, 10); // Limitar a 10 resultados
+
+  console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}"`);
+
+  res.json({
+    ok: true,
+    produtos: resultados.map(p => ({
+      codigo: p["cod de barra"] || p.codigo || "",
+      nome: p.produto || p.nome || "",
+      marca: p.marca || "",
+      categoria: p.categoria || ""
+    }))
+  });
+});
+
+// -------------------------------------------
 // ROTA PRINCIPAL DE CONSULTA
 // -------------------------------------------
 app.get("/consulta/:codigo", async (req, res) => {
