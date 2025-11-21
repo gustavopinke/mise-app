@@ -1044,11 +1044,14 @@
           bluetoothDevice.gatt.disconnect();
         }
         pesoInput.value = '';
+        ultimoPesoRecebido = 0;
       }
     });
 
     let pollingInterval = null;
     let allCharacteristics = [];
+    let ultimoPesoRecebido = 0;
+    let ultimaAtualizacaoStatus = 0;
 
     // Conectar Balança Bluetooth (Electrolux Kitchen Scale GKS.1136 BT)
     conectarBalancaBtn.addEventListener('click', async () => {
@@ -1144,6 +1147,7 @@
           bluetoothStatus.textContent = 'Balança desconectada. Clique para reconectar.';
           bluetoothStatus.style.color = '#f44336';
           pesoInput.value = '';
+          ultimoPesoRecebido = 0;
           if (pollingInterval) {
             clearInterval(pollingInterval);
             pollingInterval = null;
@@ -1262,14 +1266,22 @@
 
       // Atualizar campo se peso válido encontrado
       if (pesoEncontrado && peso > 0 && peso < 50) {
-        pesoInput.value = peso.toFixed(3);
-        bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg`;
-        bluetoothStatus.style.color = '#4CAF50';
-        atualizarBotaoSalvar();
+        // Só atualizar se o peso mudou significativamente (mais de 1g de diferença)
+        if (Math.abs(peso - ultimoPesoRecebido) > 0.001) {
+          ultimoPesoRecebido = peso;
+          pesoInput.value = peso.toFixed(3);
+          bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg`;
+          bluetoothStatus.style.color = '#4CAF50';
+          atualizarBotaoSalvar();
+        }
       } else {
-        console.log('⚠️ Peso não identificado nos dados');
-        // Mostrar dados brutos para debug
-        bluetoothStatus.innerHTML = `Dados recebidos: ${hexString}<br><small>Verifique console para debug</small>`;
+        // Só mostrar mensagem de debug no máximo a cada 3 segundos para não ficar piscando
+        const agora = Date.now();
+        if (agora - ultimaAtualizacaoStatus > 3000) {
+          ultimaAtualizacaoStatus = agora;
+          console.log('⚠️ Peso não identificado nos dados');
+          // Não mostrar dados brutos na tela para evitar piscar - só no console
+        }
       }
     }
 
