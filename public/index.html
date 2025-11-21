@@ -477,9 +477,11 @@
       height: 100%;
       background: rgba(0, 0, 0, 0.9);
       z-index: 2000;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       padding: 20px;
+      gap: 20px;
     }
 
     #image-modal.active {
@@ -488,24 +490,20 @@
 
     #modal-image {
       max-width: 90%;
-      max-height: 90%;
+      max-height: 80%;
       border-radius: 12px;
       box-shadow: 0 0 30px rgba(102, 247, 204, 0.5);
     }
 
     #close-modal {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: white;
-      color: #333;
+      background: #66F7CC;
+      color: #000;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 30px;
       border-radius: 8px;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
-      z-index: 2001;
     }
 
     /* Autocomplete de busca por nome */
@@ -691,8 +689,8 @@
 
   <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
   <div id="image-modal">
-    <button id="close-modal">✕ Fechar</button>
     <img id="modal-image" src="" alt="Produto">
+    <button id="close-modal">✕ Fechar</button>
   </div>
 
   <script>
