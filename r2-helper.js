@@ -143,10 +143,36 @@ export function r2Habilitado() {
   return USE_R2;
 }
 
+/**
+ * Baixa uma foto do R2 (retorna o stream do objeto)
+ * @param {string} filename - Nome do arquivo
+ * @returns {Promise<{stream: ReadableStream, contentType: string}|null>}
+ */
+export async function baixarFotoR2(filename) {
+  if (!USE_R2 || !r2Client) return null;
+
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: `fotos/${filename}`,
+    });
+
+    const response = await r2Client.send(command);
+    return {
+      stream: response.Body,
+      contentType: response.ContentType || 'image/jpeg',
+    };
+  } catch (error) {
+    console.error(`Erro ao baixar foto do R2: ${filename}`, error.message);
+    return null;
+  }
+}
+
 export default {
   fotoExisteR2,
   gerarUrlFotoR2,
   gerarUrlPublicaR2,
   buscarFotoR2,
+  baixarFotoR2,
   r2Habilitado,
 };

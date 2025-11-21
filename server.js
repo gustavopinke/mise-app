@@ -6,7 +6,7 @@ import axios from "axios";
 import XLSX from "xlsx";
 import * as cheerio from "cheerio";
 import dotenv from "dotenv";
-import { buscarFotoR2, r2Habilitado } from "./r2-helper.js";
+import { buscarFotoR2, baixarFotoR2, r2Habilitado } from "./r2-helper.js";
 import { uploadParaOneDrive, onedriveHabilitado, getOneDriveStatus } from "./onedrive-helper.js";
 
 // Carregar variáveis de ambiente
@@ -32,8 +32,39 @@ app.use(express.json());
 // Arquivos estáticos (HTML, imagens, etc)
 app.use(express.static(path.join(projectRoot, "public")));
 
-// Servir fotos dos produtos
+// Servir fotos dos produtos (locais)
 app.use("/fotos", express.static(path.join(projectRoot, "data", "fotos_produtos")));
+
+// -------------------------------------------
+// PROXY PARA FOTOS DO R2 (serve fotos do Cloudflare R2)
+// -------------------------------------------
+app.get("/foto-r2/:filename", async (req, res) => {
+  const { filename } = req.params;
+
+  if (!filename) {
+    return res.status(400).send("Nome do arquivo não informado");
+  }
+
+  try {
+    const resultado = await baixarFotoR2(filename);
+
+    if (!resultado) {
+      return res.status(404).send("Foto não encontrada");
+    }
+
+    // Configurar headers de cache (1 hora)
+    res.set({
+      'Content-Type': resultado.contentType,
+      'Cache-Control': 'public, max-age=3600',
+    });
+
+    // Fazer pipe do stream para a resposta
+    resultado.stream.pipe(res);
+  } catch (error) {
+    console.error("Erro ao servir foto do R2:", error);
+    res.status(500).send("Erro ao carregar foto");
+  }
+});
 
 // -------------------------------------------
 // NORMALIZA CÓDIGO DE BARRAS (7.8913E+12 → 7891300000000)
@@ -209,9 +240,10 @@ async function buscarFoto(codigo) {
 
     if (fotoR2) {
       console.log(`✅ Foto encontrada no R2: ${fotoR2.filename}`);
+      // Usar URL do proxy local ao invés da URL do R2 (evita problemas de autenticação)
       return {
         fonte: 'r2',
-        url: fotoR2.url,
+        url: `/foto-r2/${fotoR2.filename}`,
         filename: fotoR2.filename
       };
     }
