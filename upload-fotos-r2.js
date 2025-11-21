@@ -82,6 +82,15 @@ async function uploadToR2(filePath, key) {
 }
 
 /**
+ * Extrai apenas o código de barras do nome do arquivo
+ * Ex: "7899612705686_www.mise.ws.jpg" -> "7899612705686"
+ */
+function extractBarcode(filename) {
+  const match = filename.match(/^(\d+)/);
+  return match ? match[1] : filename;
+}
+
+/**
  * Processa todos os arquivos do diretório
  */
 async function processDirectory(dirPath) {
@@ -121,7 +130,7 @@ async function processDirectory(dirPath) {
       const exists = await fileExistsInR2(key);
       if (exists) {
         stats.skipped++;
-        console.log(`⏭️  [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] Já existe: ${file}`);
+        console.log(`⏭️  [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] Já existe: ${extractBarcode(file)}`);
         continue;
       }
 
@@ -130,11 +139,11 @@ async function processDirectory(dirPath) {
       stats.uploaded++;
 
       const progress = ((stats.uploaded + stats.skipped + stats.errors) / stats.total * 100).toFixed(1);
-      console.log(`✅ [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] (${progress}%) Upload: ${file}`);
+      console.log(`✅ [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] (${progress}%) Upload: ${extractBarcode(file)}`);
 
     } catch (error) {
       stats.errors++;
-      console.error(`❌ [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] Erro ao fazer upload de ${file}:`);
+      console.error(`❌ [${stats.uploaded + stats.skipped + stats.errors}/${stats.total}] Erro ao fazer upload de ${extractBarcode(file)}:`);
       console.error('Detalhes do erro:', error);
       console.error('Nome do erro:', error.name);
       console.error('Código:', error.$metadata?.httpStatusCode);
