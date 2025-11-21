@@ -217,24 +217,24 @@
     /* Header com Logo */
     .header-logo {
       text-align: center;
-      margin-bottom: 5px;
-      margin-top: -25px;
+      margin-bottom: 10px;
+      margin-top: -15px;
     }
 
     .header-logo img {
       max-width: 130px;
       height: auto;
-      margin-bottom: -2px;
+      margin-bottom: 2px;
     }
 
     .header-slogan {
       font-size: 22px;
       color: #222;
       font-weight: 500;
-      margin-top: -8px;
+      margin-top: -5px;
       margin-bottom: 0;
       letter-spacing: 0.5px;
-      line-height: 1.2;
+      line-height: 1.3;
     }
 
     .scanner-title {
@@ -858,31 +858,10 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       </style>`;
 
-      // Função para fazer fetch com retry
-      async function fetchComRetry(url, tentativas = 3) {
-        for (let i = 0; i < tentativas; i++) {
-          try {
-            const resp = await fetch(url);
-            const contentType = resp.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-              if (i < tentativas - 1) {
-                console.log(`⏳ Servidor iniciando... tentativa ${i + 2}/${tentativas}`);
-                await new Promise(r => setTimeout(r, 2000)); // Espera 2 segundos
-                continue;
-              }
-              throw new Error('Servidor ainda iniciando. Aguarde e tente novamente.');
-            }
-            return await resp.json();
-          } catch (e) {
-            if (i === tentativas - 1) throw e;
-            await new Promise(r => setTimeout(r, 2000));
-          }
-        }
-      }
-
       try {
         console.log("🔍 Iniciando busca para código:", codigo);
-        const data = await fetchComRetry(`/consulta/${codigo}`);
+        const resp = await fetch(`/consulta/${codigo}`);
+        const data = await resp.json();
 
         console.log("📦 Resposta recebida:", data);
         console.log("📦 Produto:", data.produto);
@@ -1254,11 +1233,10 @@
     let tempoInicioEstabilizacao = 0;
     let pesoConfirmado = false;
     let ultimoPesoConfirmado = 0;
-    const TEMPO_ESTABILIZACAO = 1500; // 1.5 segundos (mais rápido)
-    const TOLERANCIA_PESO = 0.020; // 20 gramas de tolerância para estabilização
-    const TOLERANCIA_MUDANCA = 0.050; // 50 gramas para detectar mudança após confirmação
+    const TEMPO_ESTABILIZACAO = 2000; // 2 segundos
+    const TOLERANCIA_PESO = 0.005; // 5 gramas de tolerância
+    const TOLERANCIA_MUDANCA = 0.010; // 10 gramas para detectar mudança após confirmação
     const PESO_MAXIMO = 10; // 10kg máximo (balança de cozinha)
-    const PESO_MINIMO_VALIDO = 0.100; // 100g mínimo - abaixo disso considera ruído/zerado
 
     // Processar dados de peso da balança
     function handleWeightData(event) {
@@ -1275,7 +1253,7 @@
       // Método 1: Peso direto em gramas (2 bytes, little-endian) - mais comum
       if (data.length >= 2 && !pesoEncontrado) {
         const pesoGramas = (data[1] << 8) | data[0];
-        if (pesoGramas >= 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+        if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
           peso = pesoGramas / 1000;
           pesoEncontrado = true;
         }
@@ -1284,7 +1262,7 @@
       // Método 2: Peso com flag no primeiro byte
       if (data.length >= 3 && !pesoEncontrado) {
         const pesoGramas = (data[2] << 8) | data[1];
-        if (pesoGramas >= 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+        if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
           peso = pesoGramas / 1000;
           pesoEncontrado = true;
         }
@@ -1293,7 +1271,7 @@
       // Método 3: Big-endian
       if (data.length >= 2 && !pesoEncontrado) {
         const pesoGramas = (data[0] << 8) | data[1];
-        if (pesoGramas >= 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+        if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
           peso = pesoGramas / 1000;
           pesoEncontrado = true;
         }
@@ -1306,7 +1284,7 @@
           const match = texto.match(/(\d+[.,]?\d*)/);
           if (match) {
             const pesoTexto = parseFloat(match[1].replace(',', '.'));
-            if (pesoTexto >= 0 && pesoTexto <= PESO_MAXIMO) {
+            if (pesoTexto > 0 && pesoTexto <= PESO_MAXIMO) {
               peso = pesoTexto;
               pesoEncontrado = true;
             }
@@ -1314,24 +1292,9 @@
         } catch (e) {}
       }
 
-      // Atualizar campo se peso válido encontrado (incluindo zero para balança zerada)
-      if (pesoEncontrado && peso >= 0 && peso <= PESO_MAXIMO) {
+      // Atualizar campo se peso válido encontrado
+      if (pesoEncontrado && peso > 0 && peso <= PESO_MAXIMO) {
         const agora = Date.now();
-
-        // Se peso é zero ou muito baixo (ruído), mostrar como balança zerada
-        if (peso < PESO_MINIMO_VALIDO) {
-          pesoInput.value = '0.000'; // Mostrar zero, não o ruído
-          bluetoothStatus.textContent = `Balança zerada - pronta para pesar`;
-          bluetoothStatus.style.color = '#2196F3';
-          pesoConfirmado = false;
-          pesoEstavel = 0;
-          tempoInicioEstabilizacao = agora;
-          ultimoPesoRecebido = 0;
-          return;
-        }
-
-        // Mostrar o peso em tempo real no campo (só pesos válidos acima do mínimo)
-        pesoInput.value = peso.toFixed(3);
 
         // Se já confirmou, verificar se o peso mudou significativamente (mexeu na balança)
         if (pesoConfirmado) {
@@ -1340,10 +1303,13 @@
             pesoConfirmado = false;
             pesoEstavel = peso;
             tempoInicioEstabilizacao = agora;
+            pesoInput.value = peso.toFixed(3);
             bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
             bluetoothStatus.style.color = '#666';
+          } else {
+            // Peso ainda estável após confirmação - manter confirmado mas atualizar display
+            pesoInput.value = peso.toFixed(3);
           }
-          // Peso ainda estável após confirmação - display já atualizado acima
         } else {
           // Ainda não confirmou - verificar estabilização
           if (Math.abs(peso - pesoEstavel) <= TOLERANCIA_PESO) {
@@ -1354,6 +1320,7 @@
               // Peso estável por 2 segundos - CONFIRMAR!
               pesoConfirmado = true;
               ultimoPesoConfirmado = peso;
+              pesoInput.value = peso.toFixed(3);
               bluetoothStatus.innerHTML = `<strong>Peso confirmado: ${peso.toFixed(3)} kg</strong>`;
               bluetoothStatus.style.color = '#4CAF50';
               atualizarBotaoSalvar();
@@ -1378,6 +1345,7 @@
             } else {
               // Ainda estabilizando - mostrar progresso
               const progresso = Math.min(100, (tempoEstavel / TEMPO_ESTABILIZACAO) * 100);
+              pesoInput.value = peso.toFixed(3);
               bluetoothStatus.textContent = `Estabilizando... ${progresso.toFixed(0)}%`;
               bluetoothStatus.style.color = '#FF9800';
             }
@@ -1385,6 +1353,7 @@
             // Peso mudou - resetar estabilização
             pesoEstavel = peso;
             tempoInicioEstabilizacao = agora;
+            pesoInput.value = peso.toFixed(3);
             bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
             bluetoothStatus.style.color = '#666';
           }
