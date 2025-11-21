@@ -14,51 +14,269 @@
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: #00c896;
+      background: #66F7CC;
       display: flex;
       justify-content: center;
-      padding: 20px;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 8px 15px 30px 15px;
     }
 
     .container {
       width: 100%;
       max-width: 420px;
-      background: white;
+      background: transparent;
       border-radius: 20px;
-      padding: 25px;
-      box-shadow: 0px 0px 18px rgba(0, 0, 0, 0.15);
+      padding: 0;
       text-align: center;
+      overflow: hidden;
     }
 
-    .logo-container {
-      background: #00c896;
-      padding: 15px;
-      border-radius: 15px;
-      margin: 0 auto 15px;
-      width: fit-content;
-    }
-
-    .logo {
-      width: 150px;
-      display: block;
+    .form-content {
+      padding: 15px 20px;
     }
 
     h2 {
       margin-top: 5px;
-      font-weight: bold;
-      color: #222;
+      margin-bottom: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #333;
+      line-height: 1.2;
+    }
+
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+      margin-top: 10px;
     }
 
     input {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border: 2px solid #ccc;
+      padding: 12px 45px 12px 12px;
+      border: 2px solid #000;
       border-radius: 10px;
       font-size: 18px;
       text-align: center;
       box-sizing: border-box;
       -moz-appearance: textfield;
+      background: transparent;
+    }
+
+    input::placeholder {
+      color: #333;
+    }
+
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 15px;
+      padding: 12px 15px;
+      border: 2px solid #000;
+      border-radius: 10px;
+      background: transparent;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #6a5acd;
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Campos de Peso e Quantidade */
+    .peso-container {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .peso-container.visible {
+      display: block;
+    }
+
+    .peso-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .peso-input {
+      flex: 1;
+    }
+
+    .bluetooth-btn {
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      padding: 0;
+      margin: 0;
+      border-radius: 10px;
+      background: #6a5acd;
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .bluetooth-btn:hover {
+      background: #5a4abd;
+    }
+
+    .bluetooth-btn.connected {
+      background: #4CAF50;
+    }
+
+    .bluetooth-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .quantidade-container {
+      margin-top: 10px;
+    }
+
+    /* Label para campos */
+    .field-label {
+      display: block;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+      margin-left: 5px;
+    }
+
+    /* Botão Salvar Inventário */
+    #salvar-inventario {
+      background: #000000;
+      color: white;
+      margin-top: 10px;
+    }
+
+    #salvar-inventario:disabled {
+      background: #666;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    #salvar-inventario:not(:disabled):hover {
+      background: #333;
+    }
+
+    /* Header com Logo */
+    .header-logo {
+      text-align: center;
+      margin-bottom: 5px;
+      margin-top: -25px;
+    }
+
+    .header-logo img {
+      max-width: 130px;
+      height: auto;
+      margin-bottom: -2px;
+    }
+
+    .header-slogan {
+      font-size: 22px;
+      color: #222;
+      font-weight: 500;
+      margin-top: -8px;
+      margin-bottom: 0;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+    }
+
+    .scanner-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 12px 0;
+      text-align: center;
+    }
+
+    .clear-button {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      color: #999;
+      border: none;
+      width: 20px;
+      height: 20px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 20px;
+      padding: 0;
+      margin: 0;
+      transition: all 0.2s;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .clear-button:hover {
+      color: #666;
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .clear-button.visible {
+      display: flex;
     }
 
     input::-webkit-outer-spin-button,
@@ -70,22 +288,41 @@
     button {
       width: 100%;
       padding: 12px;
-      font-size: 18px;
-      margin-top: 15px;
+      font-size: 15px;
+      margin-top: 10px;
       border-radius: 10px;
       border: none;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
     }
 
     #buscar {
-      background: #00c896;
-      color: white;
+      background: #66F7CC;
+      color: #222;
     }
 
     #scanner {
       background: #6a5acd;
       color: white;
+    }
+
+    button svg {
+      width: 20px;
+      height: 20px;
     }
 
     .produto-card {
@@ -111,126 +348,482 @@
       margin: 8px 0;
     }
 
-    #video-container {
+    #scanner-container {
       display: none;
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.95);
+      background: rgba(0, 0, 0, 0.98);
       z-index: 1000;
-      justify-content: center;
-      align-items: center;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
-    #video-container.active {
+    #scanner-container.active {
       display: flex;
     }
 
-    #video {
-      width: 90%;
-      max-width: 500px;
-      border-radius: 10px;
+    #scanner-reader {
+      width: 100%;
+      max-width: 600px;
+      border-radius: 12px;
+      overflow: hidden;
     }
 
-    #close-camera {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: white;
-      color: #333;
+    #scanner-reader video {
+      border-radius: 12px;
+    }
+
+    .scan-status {
+      background: rgba(0, 0, 0, 0.8);
+      color: #66F7CC;
+      padding: 12px 25px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    #close-scanner {
+      background: #f44336;
+      color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
+      padding: 12px 30px;
+      border-radius: 25px;
       font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: background 0.2s;
+      width: auto;
+      box-shadow: none;
+    }
+
+    #close-scanner:hover {
+      background: #d32f2f;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Rotação do scanner com orientação do dispositivo */
+    @media (orientation: landscape) {
+      #scanner-reader {
+        max-width: 80%;
+        max-height: 70vh;
+      }
+    }
+
+    /* Customizar estilo do html5-qrcode */
+    #scanner-reader__scan_region {
+      background: transparent !important;
+    }
+
+    #scanner-reader__dashboard_section_csr button {
+      background: #66F7CC !important;
+      color: #000 !important;
+      border: none !important;
+      padding: 10px 20px !important;
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+    }
+
+    #scanner-reader__dashboard_section_swaplink {
+      color: #66F7CC !important;
+      text-decoration: none !important;
+    }
+
+    /* Esconder textos padrão da biblioteca */
+    #scanner-reader__header_message,
+    #scanner-reader__status_span {
+      display: none !important;
+    }
+
+    #scanner-reader__scan_region > br,
+    #scanner-reader__scan_region > img {
+      display: none !important;
+    }
+
+    /* Estilo da área de leitura */
+    #qr-shaded-region {
+      border-color: #66F7CC !important;
+    }
+
+    .produto-imagem {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border-radius: 12px;
+      margin: 15px auto;
+      display: block;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .produto-imagem:hover {
+      transform: scale(1.02);
+    }
+
+    #image-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    #image-modal.active {
+      display: flex;
+    }
+
+    #modal-image {
+      max-width: 90%;
+      max-height: 80%;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(102, 247, 204, 0.5);
+    }
+
+    #close-modal {
+      background: #66F7CC;
+      color: #000;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 18px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    .scanner-line {
-      position: absolute;
-      width: 80%;
-      max-width: 400px;
-      height: 2px;
-      background: #00c896;
-      box-shadow: 0 0 10px #00c896;
-      animation: scan 2s linear infinite;
+    /* Autocomplete de busca por nome */
+    .busca-nome-container {
+      position: relative;
+      margin-top: 15px;
     }
 
-    @keyframes scan {
-      0%, 100% { transform: translateY(-150px); }
-      50% { transform: translateY(150px); }
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #000;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+
+    .autocomplete-dropdown.visible {
+      display: block;
+    }
+
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-item:hover {
+      background: #f0f0f0;
+    }
+
+    .autocomplete-item-nome {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .autocomplete-item-codigo {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
     }
 
   </style>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 
 <body>
 
   <div class="container">
 
-    <div class="logo-container">
-      <img src="logo-mise.png" class="logo" />
+    <div class="form-content">
+      <!-- Logo e Slogan -->
+      <div class="header-logo">
+        <img src="/logo-mise.png" alt="MISE" onerror="this.style.display='none'">
+        <p class="header-slogan">Prepare-se para o sucesso</p>
+      </div>
+
+      <p class="scanner-title">Scanner de Códigos de Barras</p>
+
+      <!-- INPUT CÓDIGO DE BARRAS -->
+      <div class="input-wrapper">
+        <input
+            id="codigo"
+            type="text"
+            placeholder="Digite ou escaneie o código"
+            inputmode="numeric"
+            pattern="[0-9]*"
+        />
+        <button class="clear-button" id="clear-button">✕</button>
+      </div>
+
+      <!-- BUSCA POR NOME -->
+      <div class="busca-nome-container">
+        <label class="field-label">Buscar por nome do produto</label>
+        <div class="input-wrapper">
+          <input
+              id="busca-nome"
+              type="text"
+              placeholder="Digite o nome do produto..."
+          />
+          <button class="clear-button" id="clear-busca-nome">✕</button>
+        </div>
+        <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+      </div>
+
+      <!-- TOGGLE PESAGEM -->
+      <div class="toggle-container">
+        <span class="toggle-label">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          Pesar produto aberto
+        </span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-pesagem">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- CAMPO DE PESO (visível quando toggle ativo) -->
+      <div class="peso-container" id="peso-container">
+        <label class="field-label">Peso (kg)</label>
+        <div class="peso-wrapper">
+          <div class="input-wrapper peso-input">
+            <input
+                id="peso"
+                type="text"
+                placeholder="0.000"
+                inputmode="decimal"
+            />
+          </div>
+          <button class="bluetooth-btn" id="conectar-balanca" title="Conectar Balança Bluetooth">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>
+            </svg>
+          </button>
+        </div>
+        <p id="bluetooth-status" style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Digite o peso ou clique no ícone para conectar a balança</p>
+      </div>
+
+      <!-- CAMPO DE QUANTIDADE -->
+      <div class="quantidade-container">
+        <label class="field-label">Quantidade</label>
+        <div class="input-wrapper">
+          <input
+              id="quantidade"
+              type="number"
+              placeholder="1"
+              min="1"
+              value="1"
+          />
+        </div>
+      </div>
+
+      <button id="buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        Buscar na base mise
+      </button>
+
+      <button id="scanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        Scanner
+      </button>
+
+      <!-- BOTÃO SALVAR INVENTÁRIO -->
+      <button id="salvar-inventario" disabled>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+          <polyline points="17,21 17,13 7,13 7,21"/>
+          <polyline points="7,3 7,8 15,8"/>
+        </svg>
+        Salvar no Inventário
+      </button>
+
+      <div id="resultado"></div>
     </div>
-
-    <h2>Scanner de Códigos de Barras</h2>
-
-    <!-- INPUT COM TYPE TEXT PARA EVITAR SETAS -->
-    <input
-        id="codigo"
-        type="text"
-        placeholder="Digite ou escaneie o código"
-        inputmode="numeric"
-        pattern="[0-9]*"
-    />
-
-    <button id="buscar">🔍 Buscar Produto</button>
-    <button id="scanner">📷 Scanner</button>
-
-    <div id="resultado"></div>
   </div>
 
-  <!-- CONTAINER DA CÂMERA -->
-  <div id="video-container">
-    <button id="close-camera">✕ Fechar</button>
-    <video id="video"></video>
-    <div class="scanner-line"></div>
+  <!-- CONTAINER DO SCANNER -->
+  <div id="scanner-container">
+    <div id="scanner-reader"></div>
+    <div class="scan-status" id="scan-status">Posicione o código de barras na área de leitura</div>
+    <button id="close-scanner">Fechar Câmera</button>
+  </div>
+
+  <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
+  <div id="image-modal">
+    <img id="modal-image" src="" alt="Produto">
+    <button id="close-modal">✕ Fechar</button>
   </div>
 
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
-    const videoContainer = document.getElementById("video-container");
-    const video = document.getElementById("video");
-    let codeReader = null;
-    let stream = null;
+    const scannerContainer = document.getElementById("scanner-container");
+    const scannerReader = document.getElementById("scanner-reader");
+    const imageModal = document.getElementById("image-modal");
+    const modalImage = document.getElementById("modal-image");
+    const scanStatus = document.getElementById("scan-status");
+    const clearButton = document.getElementById("clear-button");
+    let html5QrCode = null;
+    let isScanning = false;
+    let ultimaBusca = "";
+    let buscaTimeout = null;
+
+    // LIMPAR INPUT AO CLICAR NELE
+    input.addEventListener('click', () => {
+      input.value = '';
+      clearButton.classList.remove('visible');
+      resultado.innerHTML = '';
+      ultimaBusca = '';
+    });
+
+    // MOSTRAR/ESCONDER BOTÃO X
+    input.addEventListener('input', () => {
+      if (input.value.length > 0) {
+        clearButton.classList.add('visible');
+      } else {
+        clearButton.classList.remove('visible');
+      }
+    });
+
+    // LIMPAR INPUT AO CLICAR NO X
+    clearButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      input.value = '';
+      clearButton.classList.remove('visible');
+      resultado.innerHTML = '';
+      ultimaBusca = '';
+      input.focus();
+    });
+
+    // MODAL DE IMAGEM
+    function abrirImagemModal(src) {
+      modalImage.src = src;
+      imageModal.classList.add('active');
+    }
+
+    function fecharImagemModal() {
+      imageModal.classList.remove('active');
+      modalImage.src = '';
+    }
+
+    document.getElementById("close-modal").onclick = fecharImagemModal;
+    imageModal.onclick = (e) => {
+      if (e.target === imageModal) {
+        fecharImagemModal();
+      }
+    };
 
     // ENTER dispara busca
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") buscar();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        buscar();
+      }
+    });
+
+    // Auto-busca quando digitar código completo (debounce)
+    input.addEventListener("input", (e) => {
+      const codigo = e.target.value.replace(/\D/g, "");
+
+      if (buscaTimeout) clearTimeout(buscaTimeout);
+
+      // Auto-busca se tiver 8+ dígitos (código de barras comum)
+      if (codigo.length >= 8 && codigo.length <= 14) {
+        buscaTimeout = setTimeout(() => {
+          // Só buscar se o código for diferente do último buscado
+          if (codigo !== ultimaBusca) {
+            buscar();
+          }
+        }, 500); // Reduzido de 800ms para 500ms para busca mais rápida
+      }
     });
 
     document.getElementById("buscar").onclick = buscar;
 
     function mostrarProduto(produto, origem) {
       let infoHTML = '';
+      // Garantir que o código de barras está sempre disponível
+      const codigo = produto['cod de barra'] || produto['cod. de barra'] || produto.codigo || input.value.replace(/\D/g, "");
 
       // Mostrar todas as informações do produto
       for (const [key, value] of Object.entries(produto)) {
-        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome') {
+        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome' && key !== 'foto') {
           const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
           infoHTML += `<p><b>${label}:</b> ${value}</p>`;
         }
       }
 
+      // Adicionar imagem se existir
+      let imagemHTML = '';
+      if (produto.foto) {
+        console.log('📸 Foto do produto:', produto.foto);
+        console.log('📸 Tipo da foto:', typeof produto.foto);
+        // produto.foto pode ser um objeto {fonte, url, filename} ou uma string
+        let fotoUrl = '';
+        if (typeof produto.foto === 'object' && produto.foto.url) {
+          fotoUrl = produto.foto.url;
+          console.log('📸 URL da foto (objeto):', fotoUrl);
+        } else if (typeof produto.foto === 'string') {
+          fotoUrl = `/fotos/${produto.foto}`;
+          console.log('📸 URL da foto (string):', fotoUrl);
+        }
+
+        if (fotoUrl) {
+          // Escapar aspas no nome do produto para não quebrar o HTML
+          const altText = (produto.produto || produto.nome || 'Produto').replace(/"/g, '&quot;');
+          const fotoUrlEscaped = fotoUrl.replace(/'/g, "\\'");
+          imagemHTML = `<img src="${fotoUrl}" class="produto-imagem" alt="${altText}" onclick="abrirImagemModal('${fotoUrlEscaped}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
+          console.log('📸 Imagem HTML gerado com sucesso');
+        }
+      } else {
+        console.log('⚠️ Nenhuma foto disponível para o produto');
+      }
+
       resultado.innerHTML = `
         <div class="produto-card">
+          ${imagemHTML}
           <h3>${produto.produto || produto.nome || 'Produto Encontrado'}</h3>
           <div class="produto-info">
-            <p><b>Código de Barras:</b> ${produto['cod de barra'] || produto['cod. de barra'] || produto.codigo}</p>
+            <p><b>Código de Barras:</b> ${codigo}</p>
             ${infoHTML}
           </div>
         </div>
@@ -241,69 +834,751 @@
       const codigo = input.value.replace(/\D/g, "");
 
       if (!codigo) {
-        resultado.innerHTML = "<p>Digite um código válido.</p>";
+        resultado.innerHTML = "<p style='color: #999; margin-top: 20px;'>Digite um código válido.</p>";
+        ultimaBusca = "";
         return;
       }
 
-      resultado.innerHTML = "<p>⏳ Buscando...</p>";
-
-      const resp = await fetch(`/consulta/${codigo}`);
-      const data = await resp.json();
-
-      if (!data.ok) {
-        resultado.innerHTML = "<p>❌ Produto não encontrado.</p>";
+      // Evitar buscas duplicadas do mesmo código
+      if (codigo === ultimaBusca) {
+        console.log("⚠️ Código já buscado, ignorando busca duplicada");
         return;
       }
 
-      mostrarProduto(data.produto, data.origem);
+      // Atualizar ultimaBusca ANTES da busca para evitar duplicatas em requisições rápidas
+      ultimaBusca = codigo;
+      resultado.innerHTML = `<p style='margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;'>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="animation: pulse 1s ease-in-out infinite;">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        Buscando...
+      </p>
+      <style>
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      </style>`;
+
+      try {
+        console.log("🔍 Iniciando busca para código:", codigo);
+        const resp = await fetch(`/consulta/${codigo}`);
+
+        // Verificar se a resposta é JSON válido
+        const contentType = resp.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Servidor ainda iniciando. Aguarde alguns segundos e tente novamente.');
+        }
+
+        const data = await resp.json();
+
+        console.log("📦 Resposta recebida:", data);
+        console.log("📦 Produto:", data.produto);
+        console.log("📦 Foto no produto:", data.produto?.foto);
+
+        if (!data.ok) {
+          resultado.innerHTML = `
+            <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 10px; color: #c62828;">
+              <strong>❌ Produto não encontrado</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">Código: ${codigo}</p>
+            </div>
+          `;
+          return;
+        }
+
+        console.log("✅ Produto encontrado! Origem:", data.origem);
+        mostrarProduto(data.produto, data.origem);
+      } catch (error) {
+        console.error("❌ Erro na busca:", error);
+        resultado.innerHTML = `
+          <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; color: #e65100;">
+            <strong>⚠️ Erro de conexão</strong>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">Verifique sua internet e tente novamente.</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">${error.message}</p>
+          </div>
+        `;
+        // Resetar ultimaBusca em caso de erro para permitir nova tentativa
+        ultimaBusca = "";
+      }
     }
 
-    // SCANNER DE CÂMERA
+    // SCANNER DE CÂMERA - Usando html5-qrcode (solução profissional)
     document.getElementById("scanner").onclick = async () => {
       try {
-        videoContainer.classList.add('active');
+        scannerContainer.classList.add('active');
+        scanStatus.textContent = "Iniciando câmera...";
+        scanStatus.style.background = "rgba(0, 0, 0, 0.8)";
 
-        codeReader = new ZXing.BrowserBarcodeReader();
+        // Criar instância do scanner se não existir
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("scanner-reader");
+        }
 
-        const constraints = {
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+        // Configuração otimizada para leitura rápida de códigos de barras
+        const config = {
+          fps: 15, // Frames por segundo para detecção
+          qrbox: { width: 300, height: 150 }, // Área de leitura retangular (ideal para códigos de barras)
+          aspectRatio: 1.777778, // 16:9
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.ITF,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true // Usa API nativa quando disponível (mais rápido)
           }
         };
 
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-        video.play();
+        // Callback quando código é detectado
+        const onScanSuccess = (decodedText, decodedResult) => {
+          console.log(`✅ Código detectado: ${decodedText}`);
 
-        codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-          if (result) {
-            input.value = result.text;
-            fecharCamera();
-            buscar();
+          // Vibrar dispositivo
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
           }
-        });
+
+          // Som de sucesso
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = 1200;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+          } catch (e) {}
+
+          input.value = decodedText;
+          clearButton.classList.add('visible');
+          scanStatus.textContent = "✓ Código detectado!";
+          scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
+
+          // Fechar scanner e buscar
+          setTimeout(() => {
+            fecharScanner();
+            buscar();
+          }, 400);
+        };
+
+        // Callback de erro (ignorar erros de leitura normais)
+        const onScanError = (errorMessage) => {
+          // Erros normais de frames sem código - ignorar silenciosamente
+        };
+
+        // Obter câmera traseira (preferencial) com alta resolução
+        const cameras = await Html5Qrcode.getCameras();
+
+        if (!cameras || cameras.length === 0) {
+          throw new Error('Nenhuma câmera encontrada');
+        }
+
+        // Preferir câmera traseira
+        let cameraId = cameras[0].id;
+        for (const camera of cameras) {
+          const label = camera.label.toLowerCase();
+          if (label.includes('back') || label.includes('traseira') || label.includes('rear') || label.includes('environment')) {
+            cameraId = camera.id;
+            break;
+          }
+        }
+
+        // Iniciar scanner
+        await html5QrCode.start(
+          cameraId,
+          config,
+          onScanSuccess,
+          onScanError
+        );
+
+        isScanning = true;
+        scanStatus.textContent = "Posicione o código de barras na área de leitura";
+
+        // Tentar aplicar zoom e foco contínuo (se disponível)
+        try {
+          const videoElement = document.querySelector('#scanner-reader video');
+          if (videoElement && videoElement.srcObject) {
+            const track = videoElement.srcObject.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+
+            const advancedConstraints = [];
+
+            // Aplicar foco contínuo
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              advancedConstraints.push({ focusMode: 'continuous' });
+            }
+
+            // Aplicar zoom leve para melhor leitura (se disponível)
+            if (capabilities.zoom && capabilities.zoom.max > 1) {
+              const optimalZoom = Math.min(1.5, capabilities.zoom.max);
+              advancedConstraints.push({ zoom: optimalZoom });
+            }
+
+            if (advancedConstraints.length > 0) {
+              await track.applyConstraints({ advanced: advancedConstraints });
+              console.log('📷 Configurações de câmera aplicadas:', advancedConstraints);
+            }
+          }
+        } catch (e) {
+          console.log('⚠️ Não foi possível aplicar configurações avançadas de câmera');
+        }
 
       } catch (err) {
-        console.error('Erro ao acessar câmera:', err);
-        alert('Não foi possível acessar a câmera. Verifique as permissões.');
-        fecharCamera();
+        console.error('❌ Erro ao acessar câmera:', err);
+
+        let mensagem = 'Não foi possível acessar a câmera.';
+        if (err.name === 'NotAllowedError') {
+          mensagem = 'Permissão de câmera negada. Permita o acesso nas configurações do navegador.';
+        } else if (err.name === 'NotFoundError' || err.message.includes('Nenhuma câmera')) {
+          mensagem = 'Nenhuma câmera encontrada no dispositivo.';
+        } else if (err.name === 'NotReadableError') {
+          mensagem = 'Câmera em uso por outro aplicativo.';
+        }
+
+        alert(mensagem);
+        fecharScanner();
       }
     };
 
-    document.getElementById("close-camera").onclick = fecharCamera;
+    document.getElementById("close-scanner").onclick = fecharScanner;
 
-    function fecharCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        stream = null;
+    // Fechar scanner ao pressionar ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && scannerContainer.classList.contains('active')) {
+        fecharScanner();
       }
-      if (codeReader) {
-        codeReader.reset();
+    });
+
+    async function fecharScanner() {
+      if (html5QrCode && isScanning) {
+        try {
+          await html5QrCode.stop();
+        } catch (e) {
+          console.log('Erro ao parar scanner:', e);
+        }
+        isScanning = false;
       }
-      videoContainer.classList.remove('active');
+      scannerContainer.classList.remove('active');
+      scanStatus.textContent = "Posicione o código de barras na área de leitura";
+      scanStatus.style.background = "rgba(0, 0, 0, 0.8)";
     }
+
+    // ========================================
+    // TOGGLE PESAGEM E BLUETOOTH
+    // ========================================
+    const togglePesagem = document.getElementById('toggle-pesagem');
+    const pesoContainer = document.getElementById('peso-container');
+    const pesoInput = document.getElementById('peso');
+    const conectarBalancaBtn = document.getElementById('conectar-balanca');
+    const bluetoothStatus = document.getElementById('bluetooth-status');
+    const quantidadeInput = document.getElementById('quantidade');
+    const salvarInventarioBtn = document.getElementById('salvar-inventario');
+
+    let bluetoothDevice = null;
+    let bluetoothCharacteristic = null;
+    let produtoAtual = null;
+
+    // Toggle mostrar/esconder campo de peso
+    togglePesagem.addEventListener('change', () => {
+      if (togglePesagem.checked) {
+        pesoContainer.classList.add('visible');
+      } else {
+        pesoContainer.classList.remove('visible');
+        // Desconectar balança se estiver conectada
+        if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+          bluetoothDevice.gatt.disconnect();
+        }
+        pesoInput.value = '';
+        ultimoPesoRecebido = 0;
+        // Resetar variáveis de estabilização (serão definidas depois)
+      }
+    });
+
+    let pollingInterval = null;
+    let allCharacteristics = [];
+    let ultimoPesoRecebido = 0;
+    let ultimaAtualizacaoStatus = 0;
+
+    // Conectar Balança Bluetooth (Electrolux Kitchen Scale GKS.1136 BT)
+    conectarBalancaBtn.addEventListener('click', async () => {
+      try {
+        // Verificar se Bluetooth está disponível no navegador
+        if (typeof navigator === 'undefined' || !navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
+          bluetoothStatus.innerHTML = '<strong>Bluetooth não suportado</strong><br><small>Web Bluetooth só funciona em:<br>• Chrome no Android<br>• Chrome/Edge no computador<br><br>NÃO funciona em Safari ou iOS.</small>';
+          bluetoothStatus.style.color = '#f44336';
+          return;
+        }
+
+        bluetoothStatus.textContent = 'Procurando balança... Selecione na lista que aparecer.';
+        bluetoothStatus.style.color = '#666';
+
+        // Serviços comuns de balanças
+        const knownServices = [
+          '0000181d-0000-1000-8000-00805f9b34fb', // Weight Scale Service
+          '0000181b-0000-1000-8000-00805f9b34fb', // Body Composition Service
+          '0000fff0-0000-1000-8000-00805f9b34fb', // Custom Service (comum em balanças chinesas)
+          '0000ffe0-0000-1000-8000-00805f9b34fb', // Custom Service 2
+          '0000fee7-0000-1000-8000-00805f9b34fb', // Tencent service
+          '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
+          '00001801-0000-1000-8000-00805f9b34fb', // Generic Attribute
+          'battery_service'
+        ];
+
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: knownServices
+        });
+
+        bluetoothStatus.textContent = 'Conectando...';
+        const server = await bluetoothDevice.gatt.connect();
+
+        // Obter todos os serviços disponíveis
+        const services = await server.getPrimaryServices();
+        console.log('🔧 Serviços encontrados:', services.length);
+
+        allCharacteristics = [];
+
+        // Explorar todos os serviços e características
+        for (const service of services) {
+          console.log('📦 Serviço:', service.uuid);
+          try {
+            const chars = await service.getCharacteristics();
+            for (const char of chars) {
+              console.log('  📋 Característica:', char.uuid, '| Propriedades:',
+                Object.keys(char.properties).filter(k => char.properties[k]).join(', '));
+              allCharacteristics.push(char);
+
+              // Inscrever em todas as características que suportam notify/indicate
+              if (char.properties.notify || char.properties.indicate) {
+                try {
+                  if (char.properties.notify) {
+                    await char.startNotifications();
+                  }
+                  char.addEventListener('characteristicvaluechanged', handleWeightData);
+                  console.log('  ✅ Inscrito em notificações');
+                } catch (e) {
+                  console.log('  ⚠️ Não foi possível inscrever:', e.message);
+                }
+              }
+            }
+          } catch (e) {
+            console.log('  ⚠️ Erro ao ler características:', e.message);
+          }
+        }
+
+        // Também fazer polling (leitura periódica) para balanças que não enviam notificações
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(async () => {
+          for (const char of allCharacteristics) {
+            if (char.properties.read) {
+              try {
+                const value = await char.readValue();
+                // Simular evento de mudança
+                handleWeightData({ target: { value } });
+              } catch (e) {
+                // Ignorar erros de leitura
+              }
+            }
+          }
+        }, 500); // Ler a cada 500ms
+
+        // Atualizar UI
+        conectarBalancaBtn.classList.add('connected');
+        bluetoothStatus.textContent = 'Balança conectada! Coloque o produto na balança...';
+        bluetoothStatus.style.color = '#4CAF50';
+
+        // Monitorar desconexão
+        bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+          conectarBalancaBtn.classList.remove('connected');
+          bluetoothStatus.textContent = 'Balança desconectada. Clique para reconectar.';
+          bluetoothStatus.style.color = '#f44336';
+          pesoInput.value = '';
+          ultimoPesoRecebido = 0;
+          pesoEstavel = 0;
+          pesoConfirmado = false;
+          ultimoPesoConfirmado = 0;
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+        });
+
+      } catch (error) {
+        console.error('Erro Bluetooth:', error);
+
+        let mensagem = 'Erro ao conectar à balança.';
+        if (error.name === 'NotFoundError') {
+          mensagem = 'Nenhuma balança encontrada. Certifique-se que está ligada e pareada no Bluetooth do celular.';
+        } else if (error.name === 'SecurityError') {
+          mensagem = 'Permissão Bluetooth negada. Verifique as configurações do navegador.';
+        } else if (error.name === 'NotSupportedError') {
+          mensagem = 'Bluetooth não suportado neste navegador. Use Chrome no Android.';
+        } else if (error.name === 'TypeError' && error.message.includes('bluetooth')) {
+          mensagem = 'Bluetooth não disponível. Use Chrome/Edge no Android ou computador.';
+        } else if (error.message && error.message.includes('User cancelled')) {
+          mensagem = 'Seleção cancelada. Clique novamente para conectar.';
+          bluetoothStatus.style.color = '#666';
+          return;
+        } else if (error.message) {
+          mensagem = error.message;
+        }
+
+        bluetoothStatus.innerHTML = mensagem + '<br><small>Dica: Pareie a balança primeiro nas Configurações Bluetooth do celular.</small>';
+        bluetoothStatus.style.color = '#f44336';
+      }
+    });
+
+    // Variáveis para estabilização do peso
+    let pesoEstavel = 0;
+    let tempoInicioEstabilizacao = 0;
+    let pesoConfirmado = false;
+    let ultimoPesoConfirmado = 0;
+    const TEMPO_ESTABILIZACAO = 1500; // 1.5 segundos (mais rápido)
+    const TOLERANCIA_PESO = 0.010; // 10 gramas de tolerância para estabilização
+    const TOLERANCIA_MUDANCA = 0.020; // 20 gramas para detectar mudança após confirmação
+    const PESO_MAXIMO = 10; // 10kg máximo (balança de cozinha)
+    const PESO_MINIMO_VALIDO = 0.020; // 20g mínimo - abaixo disso considera ruído/zerado
+
+    // Processar dados de peso da balança
+    function handleWeightData(event) {
+      const value = event.target.value;
+      const data = new Uint8Array(value.buffer);
+
+      // Debug apenas no console
+      const hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.log('📊 Dados da balança:', hexString);
+
+      let peso = 0;
+      let pesoEncontrado = false;
+
+      // Método 1: Peso direto em gramas (2 bytes, little-endian) - mais comum
+      if (data.length >= 2 && !pesoEncontrado) {
+        const pesoGramas = (data[1] << 8) | data[0];
+        if (pesoGramas >= 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+        }
+      }
+
+      // Método 2: Peso com flag no primeiro byte
+      if (data.length >= 3 && !pesoEncontrado) {
+        const pesoGramas = (data[2] << 8) | data[1];
+        if (pesoGramas >= 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+        }
+      }
+
+      // Método 3: Big-endian
+      if (data.length >= 2 && !pesoEncontrado) {
+        const pesoGramas = (data[0] << 8) | data[1];
+        if (pesoGramas >= 0 && pesoGramas <= PESO_MAXIMO * 1000) {
+          peso = pesoGramas / 1000;
+          pesoEncontrado = true;
+        }
+      }
+
+      // Método 4: Texto ASCII
+      if (!pesoEncontrado) {
+        try {
+          const texto = new TextDecoder().decode(data);
+          const match = texto.match(/(\d+[.,]?\d*)/);
+          if (match) {
+            const pesoTexto = parseFloat(match[1].replace(',', '.'));
+            if (pesoTexto >= 0 && pesoTexto <= PESO_MAXIMO) {
+              peso = pesoTexto;
+              pesoEncontrado = true;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Atualizar campo se peso válido encontrado (incluindo zero para balança zerada)
+      if (pesoEncontrado && peso >= 0 && peso <= PESO_MAXIMO) {
+        const agora = Date.now();
+
+        // Se peso é zero ou muito baixo (ruído), mostrar como balança zerada
+        if (peso < PESO_MINIMO_VALIDO) {
+          pesoInput.value = '0.000'; // Mostrar zero, não o ruído
+          bluetoothStatus.textContent = `Balança zerada - pronta para pesar`;
+          bluetoothStatus.style.color = '#2196F3';
+          pesoConfirmado = false;
+          pesoEstavel = 0;
+          tempoInicioEstabilizacao = agora;
+          ultimoPesoRecebido = 0;
+          return;
+        }
+
+        // Mostrar o peso em tempo real no campo (só pesos válidos acima do mínimo)
+        pesoInput.value = peso.toFixed(3);
+
+        // Se já confirmou, verificar se o peso mudou significativamente (mexeu na balança)
+        if (pesoConfirmado) {
+          if (Math.abs(peso - ultimoPesoConfirmado) > TOLERANCIA_MUDANCA) {
+            // Peso mudou após confirmação - voltar a medir!
+            pesoConfirmado = false;
+            pesoEstavel = peso;
+            tempoInicioEstabilizacao = agora;
+            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+            bluetoothStatus.style.color = '#666';
+          }
+          // Peso ainda estável após confirmação - display já atualizado acima
+        } else {
+          // Ainda não confirmou - verificar estabilização
+          if (Math.abs(peso - pesoEstavel) <= TOLERANCIA_PESO) {
+            // Peso estável - verificar tempo
+            const tempoEstavel = agora - tempoInicioEstabilizacao;
+
+            if (tempoEstavel >= TEMPO_ESTABILIZACAO) {
+              // Peso estável por 2 segundos - CONFIRMAR!
+              pesoConfirmado = true;
+              ultimoPesoConfirmado = peso;
+              bluetoothStatus.innerHTML = `<strong>Peso confirmado: ${peso.toFixed(3)} kg</strong>`;
+              bluetoothStatus.style.color = '#4CAF50';
+              atualizarBotaoSalvar();
+
+              // Feedback visual e sonoro
+              try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+              } catch (e) {}
+
+              if (navigator.vibrate) navigator.vibrate(200);
+
+            } else {
+              // Ainda estabilizando - mostrar progresso
+              const progresso = Math.min(100, (tempoEstavel / TEMPO_ESTABILIZACAO) * 100);
+              bluetoothStatus.textContent = `Estabilizando... ${progresso.toFixed(0)}%`;
+              bluetoothStatus.style.color = '#FF9800';
+            }
+          } else {
+            // Peso mudou - resetar estabilização
+            pesoEstavel = peso;
+            tempoInicioEstabilizacao = agora;
+            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+            bluetoothStatus.style.color = '#666';
+          }
+        }
+
+        ultimoPesoRecebido = peso;
+      }
+      // Não mostrar nada na tela se não encontrar peso válido
+    }
+
+    // ========================================
+    // SALVAR NO INVENTÁRIO
+    // ========================================
+
+    // Atualizar estado do botão salvar
+    function atualizarBotaoSalvar() {
+      const codigo = input.value.replace(/\D/g, "");
+      const quantidade = parseInt(quantidadeInput.value) || 0;
+
+      if (codigo && quantidade > 0) {
+        salvarInventarioBtn.disabled = false;
+      } else {
+        salvarInventarioBtn.disabled = true;
+      }
+    }
+
+    // Monitorar mudanças
+    input.addEventListener('input', atualizarBotaoSalvar);
+    quantidadeInput.addEventListener('input', atualizarBotaoSalvar);
+
+    // Sobrescrever função mostrarProduto para guardar produto atual
+    const originalMostrarProduto = mostrarProduto;
+    mostrarProduto = function(produto, origem) {
+      produtoAtual = produto;
+      originalMostrarProduto(produto, origem);
+      atualizarBotaoSalvar();
+    };
+
+    // ========================================
+    // BUSCA POR NOME COM AUTOCOMPLETE
+    // ========================================
+    const buscaNomeInput = document.getElementById('busca-nome');
+    const clearBuscaNomeBtn = document.getElementById('clear-busca-nome');
+    const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
+    let buscaNomeTimeout = null;
+
+    // Mostrar/esconder botão X da busca por nome
+    buscaNomeInput.addEventListener('input', () => {
+      if (buscaNomeInput.value.length > 0) {
+        clearBuscaNomeBtn.classList.add('visible');
+      } else {
+        clearBuscaNomeBtn.classList.remove('visible');
+        autocompleteDropdown.classList.remove('visible');
+      }
+
+      // Debounce para busca
+      if (buscaNomeTimeout) clearTimeout(buscaNomeTimeout);
+
+      if (buscaNomeInput.value.length >= 2) {
+        buscaNomeTimeout = setTimeout(() => {
+          buscarPorNome(buscaNomeInput.value);
+        }, 300);
+      } else {
+        autocompleteDropdown.classList.remove('visible');
+      }
+    });
+
+    // Limpar busca por nome
+    clearBuscaNomeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      buscaNomeInput.value = '';
+      clearBuscaNomeBtn.classList.remove('visible');
+      autocompleteDropdown.classList.remove('visible');
+      buscaNomeInput.focus();
+    });
+
+    // Buscar produtos por nome
+    async function buscarPorNome(termo) {
+      try {
+        const resp = await fetch(`/api/buscar-por-nome/${encodeURIComponent(termo)}`);
+        const data = await resp.json();
+
+        if (data.ok && data.produtos.length > 0) {
+          autocompleteDropdown.innerHTML = data.produtos.map(p => `
+            <div class="autocomplete-item" data-codigo="${p.codigo}" data-nome="${p.nome}">
+              <div class="autocomplete-item-nome">${p.nome}</div>
+              <div class="autocomplete-item-codigo">Código: ${p.codigo}</div>
+            </div>
+          `).join('');
+          autocompleteDropdown.classList.add('visible');
+
+          // Adicionar eventos de clique
+          autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const codigo = item.dataset.codigo;
+              const nome = item.dataset.nome;
+
+              // Preencher o código de barras e buscar
+              input.value = codigo;
+              clearButton.classList.add('visible');
+              buscaNomeInput.value = nome;
+              autocompleteDropdown.classList.remove('visible');
+
+              // Buscar o produto
+              buscar();
+            });
+          });
+        } else {
+          autocompleteDropdown.innerHTML = '<div class="autocomplete-item"><div class="autocomplete-item-nome" style="color: #999;">Nenhum produto encontrado</div></div>';
+          autocompleteDropdown.classList.add('visible');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar por nome:', error);
+        autocompleteDropdown.classList.remove('visible');
+      }
+    }
+
+    // Fechar dropdown ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.busca-nome-container')) {
+        autocompleteDropdown.classList.remove('visible');
+      }
+    });
+
+    // Salvar no inventário
+    salvarInventarioBtn.addEventListener('click', async () => {
+      const codigo = input.value.replace(/\D/g, "");
+      const quantidade = parseInt(quantidadeInput.value) || 1;
+      const peso = pesoInput.value || '';
+
+      if (!codigo) {
+        alert('Digite ou escaneie um código de barras.');
+        return;
+      }
+
+      const dadosInventario = {
+        codigo: codigo,
+        produto: produtoAtual?.produto || produtoAtual?.nome || '',
+        quantidade: quantidade,
+        peso: peso,
+        dataHora: new Date().toISOString()
+      };
+
+      try {
+        salvarInventarioBtn.disabled = true;
+        salvarInventarioBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          Salvando...
+        `;
+
+        const resp = await fetch('/api/inventario', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dadosInventario)
+        });
+
+        const result = await resp.json();
+
+        if (result.ok) {
+          const textoSucesso = result.atualizado ? 'Quantidade atualizada!' : 'Salvo com sucesso!';
+          salvarInventarioBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            ${textoSucesso}
+          `;
+          salvarInventarioBtn.style.background = result.atualizado ? '#2196F3' : '#4CAF50';
+
+          // Resetar após 2 segundos
+          setTimeout(() => {
+            salvarInventarioBtn.innerHTML = `
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                <polyline points="17,21 17,13 7,13 7,21"/>
+                <polyline points="7,3 7,8 15,8"/>
+              </svg>
+              Salvar no Inventário
+            `;
+            salvarInventarioBtn.style.background = '#000000';
+            salvarInventarioBtn.disabled = false;
+
+            // Limpar campos para próximo produto
+            quantidadeInput.value = '1';
+          }, 2000);
+        } else {
+          throw new Error(result.error || 'Erro ao salvar');
+        }
+      } catch (error) {
+        console.error('Erro ao salvar inventário:', error);
+        alert('Erro ao salvar no inventário: ' + error.message);
+
+        salvarInventarioBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17,21 17,13 7,13 7,21"/>
+            <polyline points="7,3 7,8 15,8"/>
+          </svg>
+          Salvar no Inventário
+        `;
+        salvarInventarioBtn.disabled = false;
+      }
+    });
+
 
   </script>
 </body>
