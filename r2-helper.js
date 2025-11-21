@@ -92,7 +92,7 @@ export function gerarUrlPublicaR2(filename) {
 }
 
 /**
- * Busca foto do produto no R2 (tenta várias extensões)
+ * Busca foto do produto no R2 (tenta várias extensões e padrões de nome)
  * @param {string} codigoBarras - Código de barras do produto
  * @returns {Promise<{url: string, filename: string}|null>}
  */
@@ -100,7 +100,14 @@ export async function buscarFotoR2(codigoBarras) {
   if (!USE_R2 || !r2Client) return null;
 
   const extensoes = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-  const sufixos = ['', '_mise'];
+  // Padrões de sufixo encontrados nos arquivos
+  const sufixos = [
+    '',
+    '_mise',
+    '_www.mise.ws',
+    '_www.mise',
+    '_mise.ws'
+  ];
 
   // Tentar todas as combinações
   for (const sufixo of sufixos) {
@@ -109,6 +116,7 @@ export async function buscarFotoR2(codigoBarras) {
 
       const existe = await fotoExisteR2(filename);
       if (existe) {
+        console.log(`📸 Foto encontrada no R2: ${filename}`);
         // Tentar URL pública primeiro
         const publicUrl = gerarUrlPublicaR2(filename);
         if (publicUrl) {
