@@ -858,17 +858,31 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       </style>`;
 
+      // Função para fazer fetch com retry
+      async function fetchComRetry(url, tentativas = 3) {
+        for (let i = 0; i < tentativas; i++) {
+          try {
+            const resp = await fetch(url);
+            const contentType = resp.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              if (i < tentativas - 1) {
+                console.log(`⏳ Servidor iniciando... tentativa ${i + 2}/${tentativas}`);
+                await new Promise(r => setTimeout(r, 2000)); // Espera 2 segundos
+                continue;
+              }
+              throw new Error('Servidor ainda iniciando. Aguarde e tente novamente.');
+            }
+            return await resp.json();
+          } catch (e) {
+            if (i === tentativas - 1) throw e;
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+      }
+
       try {
         console.log("🔍 Iniciando busca para código:", codigo);
-        const resp = await fetch(`/consulta/${codigo}`);
-
-        // Verificar se a resposta é JSON válido
-        const contentType = resp.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Servidor ainda iniciando. Aguarde alguns segundos e tente novamente.');
-        }
-
-        const data = await resp.json();
+        const data = await fetchComRetry(`/consulta/${codigo}`);
 
         console.log("📦 Resposta recebida:", data);
         console.log("📦 Produto:", data.produto);
@@ -1241,10 +1255,10 @@
     let pesoConfirmado = false;
     let ultimoPesoConfirmado = 0;
     const TEMPO_ESTABILIZACAO = 1500; // 1.5 segundos (mais rápido)
-    const TOLERANCIA_PESO = 0.010; // 10 gramas de tolerância para estabilização
-    const TOLERANCIA_MUDANCA = 0.020; // 20 gramas para detectar mudança após confirmação
+    const TOLERANCIA_PESO = 0.020; // 20 gramas de tolerância para estabilização
+    const TOLERANCIA_MUDANCA = 0.050; // 50 gramas para detectar mudança após confirmação
     const PESO_MAXIMO = 10; // 10kg máximo (balança de cozinha)
-    const PESO_MINIMO_VALIDO = 0.020; // 20g mínimo - abaixo disso considera ruído/zerado
+    const PESO_MINIMO_VALIDO = 0.100; // 100g mínimo - abaixo disso considera ruído/zerado
 
     // Processar dados de peso da balança
     function handleWeightData(event) {
