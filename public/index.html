@@ -217,20 +217,20 @@
     /* Header com Logo */
     .header-logo {
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .header-logo img {
-      max-width: 120px;
+      max-width: 130px;
       height: auto;
-      margin-bottom: 2px;
+      margin-bottom: 0;
     }
 
     .header-slogan {
-      font-size: 14px;
-      color: #333;
-      font-weight: 400;
-      margin-top: 0;
+      font-size: 17px;
+      color: #222;
+      font-weight: 500;
+      margin-top: 2px;
       margin-bottom: 0;
       letter-spacing: 0.3px;
       line-height: 1.2;
@@ -815,15 +815,14 @@
       }
     }
 
-    // SCANNER DE CÂMERA - Configurações PROFISSIONAIS para leitura rápida e precisa
+    // SCANNER DE CÂMERA - Otimizado para leitura rápida
     document.getElementById("scanner").onclick = async () => {
       try {
         videoContainer.classList.add('active');
         scanStatus.textContent = "Iniciando câmera...";
 
-        // Usar MultiFormatReader com configurações otimizadas para velocidade
+        // Configurar leitor de código de barras
         const hints = new Map();
-        // Formatos de código de barras 1D mais comuns - ordenados por frequência
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
           ZXing.BarcodeFormat.EAN_13,
           ZXing.BarcodeFormat.EAN_8,
@@ -831,172 +830,107 @@
           ZXing.BarcodeFormat.UPC_E,
           ZXing.BarcodeFormat.CODE_128,
           ZXing.BarcodeFormat.CODE_39,
-          ZXing.BarcodeFormat.ITF,
-          ZXing.BarcodeFormat.CODABAR
+          ZXing.BarcodeFormat.ITF
         ]);
-        // Configurações para leitura mais agressiva
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-        hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
 
         codeReader = new ZXing.BrowserMultiFormatReader(hints);
-        // Scan ultra-rápido: 50ms = 20 scans/segundo
-        codeReader.timeBetweenDecodingAttempts = 50;
+        codeReader.timeBetweenDecodingAttempts = 100;
 
-        // Configurações de câmera PROFISSIONAIS para melhor foco e nitidez
+        // Configurações de câmera simples e compatíveis
         const constraints = {
           video: {
-            facingMode: { exact: 'environment' },
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
-            frameRate: { ideal: 30, min: 15 },
-            aspectRatio: { ideal: 16/9 }
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           }
         };
 
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
 
-        // Aplicar configurações avançadas de câmera para FOCO PERFEITO
+        // Tentar aplicar foco contínuo (se disponível)
         try {
           const track = stream.getVideoTracks()[0];
           const capabilities = track.getCapabilities();
-          const advancedConstraints = [];
 
-          // Foco contínuo automático (mais importante!)
-          if (capabilities.focusMode) {
-            if (capabilities.focusMode.includes('continuous')) {
-              advancedConstraints.push({ focusMode: 'continuous' });
-            } else if (capabilities.focusMode.includes('auto')) {
-              advancedConstraints.push({ focusMode: 'auto' });
-            }
+          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+            await track.applyConstraints({
+              advanced: [{ focusMode: 'continuous' }]
+            });
           }
-
-          // Exposição contínua para ajustar luz automaticamente
-          if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
-            advancedConstraints.push({ exposureMode: 'continuous' });
-          }
-
-          // Balanço de branco automático
-          if (capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes('continuous')) {
-            advancedConstraints.push({ whiteBalanceMode: 'continuous' });
-          }
-
-          // Desativar torch/flash para não atrapalhar
-          if (capabilities.torch) {
-            advancedConstraints.push({ torch: false });
-          }
-
-          // Zoom no nível ideal para códigos de barras (se disponível)
-          if (capabilities.zoom && capabilities.zoom.min && capabilities.zoom.max) {
-            const zoomIdeal = Math.min(capabilities.zoom.max, Math.max(capabilities.zoom.min, 1.5));
-            advancedConstraints.push({ zoom: zoomIdeal });
-          }
-
-          // Aplicar todas as configurações
-          if (advancedConstraints.length > 0) {
-            await track.applyConstraints({ advanced: advancedConstraints });
-            console.log('✅ Configurações avançadas de câmera aplicadas');
-          }
-        } catch (focusErr) {
-          console.log('⚠️ Algumas configurações de câmera não disponíveis:', focusErr.message);
+        } catch (e) {
+          // Ignorar - foco automático não disponível
         }
 
-        // Aguardar o vídeo carregar antes de iniciar
         await video.play();
-
         scanStatus.textContent = "Posicione o código de barras no centro";
 
-        let lastScannedCode = '';
-        let scanConfirmCount = 0;
-
-        // Decodificar código de barras com VALIDAÇÃO DUPLA para evitar erros
+        // Decodificar código de barras
         codeReader.decodeFromVideoDevice(null, video, (result, err) => {
           if (result) {
-            const scannedCode = result.text;
-
-            // Validação dupla: confirmar leitura 2x seguidas para evitar erros
-            if (scannedCode === lastScannedCode) {
-              scanConfirmCount++;
-            } else {
-              lastScannedCode = scannedCode;
-              scanConfirmCount = 1;
+            // Vibrar dispositivo
+            if (navigator.vibrate) {
+              navigator.vibrate(100);
             }
 
-            // Só aceitar após 2 leituras iguais consecutivas
-            if (scanConfirmCount >= 2) {
-              // Vibrar dispositivo para feedback tátil (se disponível)
-              if (navigator.vibrate) {
-                navigator.vibrate(100);
-              }
+            // Som de sucesso
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              oscillator.frequency.value = 1000;
+              oscillator.type = 'sine';
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {}
 
-              // Som de sucesso
-              try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 1200;
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.15);
-              } catch (e) {
-                // Ignorar erro de som
-              }
+            input.value = result.text;
+            scanStatus.textContent = "✓ Código detectado!";
+            scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
 
-              input.value = scannedCode;
-              scanStatus.textContent = "✓ Código detectado!";
-              scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
-
-              setTimeout(() => {
-                fecharCamera();
-                buscar();
-              }, 300);
-            } else {
-              scanStatus.textContent = "Confirmando leitura...";
-            }
+            setTimeout(() => {
+              fecharCamera();
+              buscar();
+            }, 300);
           }
         });
 
       } catch (err) {
         console.error('Erro ao acessar câmera:', err);
 
-        let mensagem = 'Não foi possível acessar a câmera.';
-        if (err.name === 'NotAllowedError') {
-          mensagem = 'Permissão de câmera negada. Por favor, permita o acesso nas configurações do navegador.';
-        } else if (err.name === 'NotFoundError') {
-          mensagem = 'Nenhuma câmera encontrada no dispositivo.';
-        } else if (err.name === 'OverconstrainedError') {
-          // Tentar novamente com configurações mais simples
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: 'environment' }
-            });
-            video.srcObject = stream;
-            await video.play();
-            scanStatus.textContent = "Posicione o código de barras no centro";
+        // Se falhar, tentar configuração mais simples
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = stream;
+          await video.play();
+          scanStatus.textContent = "Posicione o código de barras no centro";
 
-            codeReader.decodeFromVideoDevice(null, video, (result, err) => {
-              if (result) {
-                if (navigator.vibrate) navigator.vibrate(100);
-                input.value = result.text;
-                scanStatus.textContent = "✓ Código detectado!";
-                setTimeout(() => {
-                  fecharCamera();
-                  buscar();
-                }, 300);
-              }
-            });
-            return;
-          } catch (e) {
-            mensagem = 'Erro nas configurações da câmera. Tente novamente.';
+          codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+            if (result) {
+              if (navigator.vibrate) navigator.vibrate(100);
+              input.value = result.text;
+              scanStatus.textContent = "✓ Código detectado!";
+              setTimeout(() => {
+                fecharCamera();
+                buscar();
+              }, 300);
+            }
+          });
+          return;
+        } catch (e) {
+          let mensagem = 'Não foi possível acessar a câmera.';
+          if (err.name === 'NotAllowedError') {
+            mensagem = 'Permissão de câmera negada. Permita o acesso nas configurações.';
+          } else if (err.name === 'NotFoundError') {
+            mensagem = 'Nenhuma câmera encontrada.';
           }
+          alert(mensagem);
+          fecharCamera();
         }
-
-        alert(mensagem);
-        fecharCamera();
       }
     };
 
