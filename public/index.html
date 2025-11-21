@@ -375,13 +375,14 @@
 
     #close-camera {
       position: absolute;
-      top: 20px;
-      right: 20px;
-      background: transparent;
+      bottom: 2%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
       color: #66F7CC;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
+      border: 2px solid #66F7CC;
+      padding: 12px 30px;
+      border-radius: 25px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
@@ -485,7 +486,7 @@
 
     .scan-status {
       position: absolute;
-      bottom: 8%;
+      bottom: 10%;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.8);
@@ -509,7 +510,7 @@
       <!-- Logo e Slogan -->
       <div class="header-logo">
         <img src="/logo-mise.png" alt="MISE" onerror="this.style.display='none'">
-        <p class="header-slogan">Prepara para o sucesso</p>
+        <p class="header-slogan">Prepare-se para o sucesso</p>
       </div>
 
       <h2>Scanner de Códigos de Barras</h2>
@@ -928,8 +929,10 @@
     conectarBalancaBtn.addEventListener('click', async () => {
       try {
         // Verificar se Bluetooth está disponível no navegador
-        if (!navigator.bluetooth) {
-          bluetoothStatus.innerHTML = 'Bluetooth não suportado neste navegador.<br><small>Use Chrome/Edge no Android ou computador. Safari não suporta Web Bluetooth.</small>';
+        // Web Bluetooth só funciona em Chrome/Edge no Android ou Desktop
+        // NÃO funciona em: Safari, Firefox, iOS (nenhum navegador)
+        if (typeof navigator === 'undefined' || !navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
+          bluetoothStatus.innerHTML = '<strong>Bluetooth não suportado</strong><br><small>Web Bluetooth só funciona em:<br>• Chrome no Android<br>• Chrome/Edge no computador<br><br>NÃO funciona em Safari ou iOS.</small>';
           bluetoothStatus.style.color = '#f44336';
           return;
         }

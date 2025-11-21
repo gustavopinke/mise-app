@@ -253,170 +253,90 @@ function limparNome(nome) {
 }
 
 // -------------------------------------------
-// BUSCA ONLINE – Open Food Facts + Cosmos
+// BUSCA ONLINE – COSMOS (seguindo lógica do script Python)
 // -------------------------------------------
 async function buscarCosmos(codigo) {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🌐 INICIANDO BUSCA ONLINE");
+  console.log("🌐 INICIANDO BUSCA NO COSMOS");
   console.log(`📋 Código: ${codigo}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // 1. TENTAR OPEN FOOD FACTS (API gratuita e aberta)
-  try {
-    console.log("\n🥫 Tentando Open Food Facts...");
-    const urlOFF = `https://world.openfoodfacts.org/api/v2/product/${codigo}.json`;
+  // Headers iguais ao script Python
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Referer": "https://cosmos.bluesoft.com.br/"
+  };
 
-    const respostaOFF = await axios.get(urlOFF, {
-      timeout: 15000,
-      headers: {
-        "User-Agent": "MISE-App/1.0 (https://app.mise.ws)"
-      }
-    });
+  // URLs na mesma ordem do script Python
+  const urls = [
+    `https://api.cosmos.bluesoft.com.br/produtos/${codigo}`,
+    `https://cosmos.bluesoft.com.br/produtos/${codigo}`
+  ];
 
-    if (respostaOFF.data && respostaOFF.data.status === 1 && respostaOFF.data.product) {
-      const produto = respostaOFF.data.product;
-      const nome = produto.product_name_pt ||
-                   produto.product_name_pt_br ||
-                   produto.product_name ||
-                   produto.generic_name_pt ||
-                   produto.generic_name ||
-                   null;
-
-      if (nome && nome.length > 2) {
-        const nomeLimpo = limparNome(nome);
-        console.log("✅ Open Food Facts:", nomeLimpo);
-        return { nome: nomeLimpo, codigo: codigo, origem: "openfoodfacts" };
-      }
-    }
-    console.log("⚠️ Open Food Facts: produto não encontrado ou sem nome");
-  } catch (errOFF) {
-    console.log("⚠️ Open Food Facts erro:", errOFF.message);
-  }
-
-  // 2. TENTAR COSMOS (com API token se disponível)
-  const cosmosToken = process.env.COSMOS_API_TOKEN;
-
-  if (cosmosToken) {
+  for (const url of urls) {
     try {
-      console.log("\n🔷 Tentando API Cosmos (com token)...");
-      const urlAPI = `https://api.cosmos.bluesoft.com.br/gtins/${codigo}`;
+      console.log(`\n🔗 Tentando: ${url}`);
 
-      const respostaAPI = await axios.get(urlAPI, {
-        timeout: 15000,
-        headers: {
-          "X-Cosmos-Token": cosmosToken,
-          "User-Agent": "MISE-App/1.0"
-        }
+      const resposta = await axios.get(url, {
+        headers,
+        timeout: 20000,
+        validateStatus: (status) => status < 500,
+        maxRedirects: 5
       });
 
-      if (respostaAPI.data) {
-        const nome = respostaAPI.data.description ||
-                     respostaAPI.data.product_name ||
-                     respostaAPI.data.name;
+      console.log(`📊 Status: ${resposta.status}`);
 
-        if (nome) {
-          const nomeLimpo = limparNome(nome);
-          console.log("✅ Cosmos API:", nomeLimpo);
-          return { nome: nomeLimpo, codigo: codigo, origem: "cosmos" };
-        }
+      if (resposta.status !== 200) {
+        console.log(`⚠️ Status ${resposta.status}, tentando próxima URL...`);
+        continue;
       }
-    } catch (errAPI) {
-      console.log("⚠️ Cosmos API erro:", errAPI.message);
-    }
-  }
 
-  // 3. TENTAR SCRAPING DO COSMOS (fallback)
-  try {
-    console.log("\n🔍 Tentando scraping Cosmos...");
-    const urlScrape = `https://cosmos.bluesoft.com.br/produtos/${codigo}`;
+      // Extrair nome e NCM do HTML (igual ao script Python)
+      const html = resposta.data;
+      if (!html) continue;
 
-    const headers = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
-      "Accept-Encoding": "gzip, deflate, br",
-      "Connection": "keep-alive",
-      "Upgrade-Insecure-Requests": "1",
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Sec-Fetch-User": "?1",
-      "Cache-Control": "max-age=0"
-    };
+      const $ = cheerio.load(html);
+      let nome = null;
 
-    const resposta = await axios.get(urlScrape, {
-      headers,
-      timeout: 20000,
-      validateStatus: (status) => status < 500,
-      maxRedirects: 5
-    });
+      // 1. Primeiro: span#product_description (principal do Cosmos)
+      const prodDesc = $('span#product_description').text().trim();
+      if (prodDesc) {
+        nome = limparNome(prodDesc);
+        console.log("✅ Nome encontrado (span#product_description):", nome);
+      }
 
-    if (resposta.status === 200 && resposta.headers['content-type']?.includes('text/html')) {
-      const $ = cheerio.load(resposta.data);
-
-      // Tentar extrair nome
-      const seletores = [
-        'span#product_description',
-        'h1.product-name',
-        'h1.product-title',
-        '.product-name h1',
-        '[itemprop="name"]',
-        'h1'
-      ];
-
-      for (const seletor of seletores) {
-        const texto = $(seletor).first().text().trim();
-        if (texto && texto.length > 5 && !texto.toLowerCase().includes('cosmos') && !texto.toLowerCase().includes('bluesoft')) {
-          const nomeLimpo = limparNome(texto);
-          console.log(`✅ Cosmos scraping (${seletor}):`, nomeLimpo);
-          return { nome: nomeLimpo, codigo: codigo, origem: "cosmos-scrape" };
+      // 2. Fallback: meta og:title
+      if (!nome) {
+        const ogTitle = $('meta[property="og:title"]').attr('content');
+        if (ogTitle && ogTitle.trim()) {
+          nome = limparNome(ogTitle);
+          console.log("✅ Nome encontrado (og:title):", nome);
         }
       }
 
-      // Tentar og:title
-      const ogTitle = $('meta[property="og:title"]').attr('content');
-      if (ogTitle && ogTitle.length > 5 && !ogTitle.toLowerCase().includes('cosmos')) {
-        const nomeLimpo = limparNome(ogTitle);
-        console.log("✅ Cosmos scraping (og:title):", nomeLimpo);
-        return { nome: nomeLimpo, codigo: codigo, origem: "cosmos-scrape" };
+      // 3. Fallback: h1
+      if (!nome) {
+        const h1Text = $('h1').first().text().trim();
+        if (h1Text) {
+          nome = limparNome(h1Text);
+          console.log("✅ Nome encontrado (h1):", nome);
+        }
       }
-    } else if (resposta.status === 403) {
-      console.log("⚠️ Cosmos bloqueou acesso (403) - site requer autenticação");
-    } else if (resposta.status === 404) {
-      console.log("⚠️ Produto não existe no Cosmos (404)");
+
+      if (nome && nome !== "-") {
+        return { nome: nome, codigo: codigo };
+      }
+
+    } catch (err) {
+      console.log(`❌ Erro em ${url}: ${err.message}`);
+      continue;
     }
-  } catch (errScrape) {
-    console.log("⚠️ Cosmos scraping erro:", errScrape.message);
-  }
-
-  // 4. TENTAR UPC DATABASE (alternativa internacional)
-  try {
-    console.log("\n🌍 Tentando UPC Database...");
-    const urlUPC = `https://api.upcitemdb.com/prod/trial/lookup?upc=${codigo}`;
-
-    const respostaUPC = await axios.get(urlUPC, {
-      timeout: 10000,
-      headers: {
-        "User-Agent": "MISE-App/1.0"
-      }
-    });
-
-    if (respostaUPC.data && respostaUPC.data.items && respostaUPC.data.items.length > 0) {
-      const item = respostaUPC.data.items[0];
-      const nome = item.title || item.description || item.brand;
-
-      if (nome && nome.length > 2) {
-        const nomeLimpo = limparNome(nome);
-        console.log("✅ UPC Database:", nomeLimpo);
-        return { nome: nomeLimpo, codigo: codigo, origem: "upc-database" };
-      }
-    }
-  } catch (errUPC) {
-    console.log("⚠️ UPC Database erro:", errUPC.message);
   }
 
   console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("❌ Produto NÃO encontrado em nenhuma fonte online");
+  console.log("❌ COSMOS: Produto NÃO encontrado");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   return null;
 }
