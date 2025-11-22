@@ -1156,63 +1156,43 @@
     };
 
     async function abrirScanner() {
-      scannerContainer.classList.add('active');
-      scanStatusText.textContent = "Iniciando camera...";
-      scanStatusBar.className = '';
-      scanCount = 0;
-      scanCountSpan.textContent = '0';
-
-      // Inicializar detector de codigo de barras
-      if (!barcodeDetector) {
-        try {
-          await initBarcodeDetector();
-        } catch (e) {
-          console.warn('Erro ao inicializar detector:', e);
-        }
-      }
-
-      // Tentar abrir camera com diferentes configuracoes
-      let cameraAberta = false;
-
-      // Tentativa 1: Camera traseira simples
-      const tentativas = [
-        { video: { facingMode: 'environment' } },
-        { video: { facingMode: { ideal: 'environment' } } },
-        { video: true }
-      ];
-
-      for (const constraints of tentativas) {
-        if (cameraAberta) break;
-        try {
-          console.log('Tentando:', JSON.stringify(constraints));
-          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-          cameraAberta = true;
-          console.log('Camera aberta com sucesso!');
-        } catch (e) {
-          console.warn('Falha com constraints:', constraints, e.message);
-        }
-      }
-
-      if (!cameraAberta || !mediaStream) {
-        alert('Nao foi possivel acessar a camera. Verifique as permissoes.');
-        fecharScanner();
-        return;
-      }
-
       try {
+        scannerContainer.classList.add('active');
+        scanStatusText.textContent = "Iniciando camera...";
+        scanStatusBar.className = '';
+        scanCount = 0;
+        scanCountSpan.textContent = '0';
+
+        // Inicializar detector de codigo de barras
+        if (!barcodeDetector) {
+          await initBarcodeDetector();
+        }
+
+        // Configuracoes da camera - preferir traseira com alta resolucao
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            focusMode: { ideal: 'continuous' },
+            zoom: { ideal: 1.5 }
+          }
+        };
+
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         scannerVideo.srcObject = mediaStream;
 
-        // Tentar aplicar configuracoes avancadas (opcional)
-        try {
-          const track = mediaStream.getVideoTracks()[0];
-          if (track && track.getCapabilities) {
-            const capabilities = track.getCapabilities();
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-            }
-          }
-        } catch (e) {
-          console.warn('Config avancadas nao suportadas:', e.message);
+        // Aplicar configuracoes avancadas
+        const track = mediaStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+
+        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+          await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        }
+
+        if (capabilities.zoom && capabilities.zoom.max > 1) {
+          const optimalZoom = Math.min(1.5, capabilities.zoom.max);
+          await track.applyConstraints({ advanced: [{ zoom: optimalZoom }] });
         }
 
         await scannerVideo.play();
@@ -1229,7 +1209,7 @@
 
         let mensagem = 'Nao foi possivel acessar a camera.';
         if (err.name === 'NotAllowedError') {
-          mensagem = 'Permissao de camera negada. Va em Configuracoes > Safari > Camera.';
+          mensagem = 'Permissao de camera negada.';
         } else if (err.name === 'NotFoundError') {
           mensagem = 'Nenhuma camera encontrada.';
         }

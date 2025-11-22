@@ -35,7 +35,6 @@ build/
 *.tmp
 *.temp
 
-# SQLite database (generated from CSV)
-data/produtos.db
+# SQLite WAL files (temporary)
 data/produtos.db-wal
 data/produtos.db-shm
