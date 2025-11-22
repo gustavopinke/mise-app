@@ -393,6 +393,43 @@ function limparNome(nome) {
 }
 
 // -------------------------------------------
+// BUSCA POR NOME NO OPEN FOOD FACTS
+// -------------------------------------------
+async function buscarPorNomeOpenFoodFacts(termo) {
+  console.log("🥫 Buscando por nome no Open Food Facts:", termo);
+
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termo)}&search_simple=1&action=process&json=1&page_size=10&lc=pt`;
+    const resposta = await axios.get(url, {
+      timeout: 15000,
+      headers: {
+        "User-Agent": "MISE-Scanner/1.0 (contact@mise.ws)"
+      }
+    });
+
+    if (resposta.data && resposta.data.products && resposta.data.products.length > 0) {
+      const resultados = resposta.data.products
+        .filter(p => p.product_name || p.product_name_pt)
+        .map(p => ({
+          codigo: p.code || "",
+          nome: p.product_name_pt || p.product_name || "",
+          marca: p.brands || "",
+          categoria: p.categories || "",
+          origem: "Open Food Facts"
+        }))
+        .slice(0, 10);
+
+      console.log(`✅ Open Food Facts: Encontrados ${resultados.length} produtos`);
+      return resultados;
+    }
+  } catch (err) {
+    console.log("❌ Open Food Facts busca por nome: Erro -", err.message);
+  }
+
+  return [];
+}
+
+// -------------------------------------------
 // BUSCA ONLINE – OPEN FOOD FACTS (API gratuita)
 // -------------------------------------------
 async function buscarOpenFoodFacts(codigo) {
@@ -743,9 +780,9 @@ function salvarProduto(codigo, nome, fonte) {
 }
 
 // -------------------------------------------
-// API BUSCA POR NOME (autocomplete) - SQLite
+// API BUSCA POR NOME (autocomplete) - SQLite + APIs externas
 // -------------------------------------------
-app.get("/api/buscar-por-nome/:termo", (req, res) => {
+app.get("/api/buscar-por-nome/:termo", async (req, res) => {
   const termo = (req.params.termo || "").toLowerCase().trim();
 
   if (!termo || termo.length < 2) {
@@ -754,6 +791,7 @@ app.get("/api/buscar-por-nome/:termo", (req, res) => {
 
   console.log("🔍 Buscando produtos por nome:", termo);
 
+  let resultadosLocais = [];
   const database = getDatabase();
 
   // Se SQLite existe, usa ele
@@ -765,42 +803,58 @@ app.get("/api/buscar-por-nome/:termo", (req, res) => {
         WHERE produto LIKE ?
         LIMIT 10
       `);
-      const resultados = stmt.all(`%${termo}%`);
-
-      console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}"`);
-
-      return res.json({
-        ok: true,
-        produtos: resultados.map(p => ({
-          codigo: p.codigo_barras,
-          nome: p.produto,
-          marca: p.marca || "",
-          categoria: p.categoria || ""
-        }))
-      });
+      resultadosLocais = stmt.all(`%${termo}%`).map(p => ({
+        codigo: p.codigo_barras,
+        nome: p.produto,
+        marca: p.marca || "",
+        categoria: p.categoria || "",
+        origem: "local"
+      }));
     } catch (err) {
-      console.error("Erro na busca por nome:", err);
+      console.error("Erro na busca por nome no SQLite:", err);
     }
   }
 
-  // Fallback para CSV
-  const { produtos } = carregarBase();
-
-  const resultados = produtos.filter(p => {
-    const nome = (p.produto || p.nome || "").toLowerCase();
-    return nome.includes(termo);
-  }).slice(0, 10);
-
-  console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}"`);
-
-  res.json({
-    ok: true,
-    produtos: resultados.map(p => ({
+  // Se não encontrou no SQLite, tenta CSV
+  if (resultadosLocais.length === 0) {
+    const { produtos } = carregarBase();
+    resultadosLocais = produtos.filter(p => {
+      const nome = (p.produto || p.nome || "").toLowerCase();
+      return nome.includes(termo);
+    }).slice(0, 10).map(p => ({
       codigo: p["cod de barra"] || p.codigo || "",
       nome: p.produto || p.nome || "",
       marca: p.marca || "",
-      categoria: p.categoria || ""
-    }))
+      categoria: p.categoria || "",
+      origem: "local"
+    }));
+  }
+
+  // Se não encontrou localmente, buscar nas APIs externas
+  if (resultadosLocais.length === 0) {
+    console.log("🌐 Buscando nas APIs externas por nome:", termo);
+
+    try {
+      const resultadosOnline = await buscarPorNomeOpenFoodFacts(termo);
+      if (resultadosOnline.length > 0) {
+        console.log(`✅ Encontrados ${resultadosOnline.length} produtos online para "${termo}"`);
+        return res.json({
+          ok: true,
+          produtos: resultadosOnline,
+          fonte: "online"
+        });
+      }
+    } catch (err) {
+      console.error("Erro na busca online por nome:", err);
+    }
+  }
+
+  console.log(`✅ Encontrados ${resultadosLocais.length} produtos para "${termo}"`);
+
+  res.json({
+    ok: true,
+    produtos: resultadosLocais,
+    fonte: resultadosLocais.length > 0 ? "local" : "nenhum"
   });
 });
 
