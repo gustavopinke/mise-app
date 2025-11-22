@@ -1369,93 +1369,34 @@
       }
     }
 
-    // Canvas para processamento de imagem (melhora deteccao)
-    let scanCanvas = null;
-    let scanCtx = null;
-    let falhasConsecutivas = 0;
-    let scanningActive = false;
-
     function startScanning() {
       if (scanInterval) clearInterval(scanInterval);
 
-      // Criar canvas para melhor deteccao
-      if (!scanCanvas) {
-        scanCanvas = document.createElement('canvas');
-        scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
-      }
-
-      falhasConsecutivas = 0;
-      scanningActive = true;
-
-      // Funcao de scan usando requestAnimationFrame para melhor performance
-      async function scanFrame() {
-        if (!scanningActive || !isScanning || !barcodeDetector) {
-          return;
-        }
-
-        // Verificar se video esta pronto
-        if (scannerVideo.readyState < 2 || scannerVideo.videoWidth === 0) {
-          requestAnimationFrame(scanFrame);
-          return;
-        }
+      // Scanner simples e direto - verificar a cada 100ms (10fps)
+      scanInterval = setInterval(async () => {
+        if (!isScanning || !barcodeDetector || scannerVideo.readyState !== 4) return;
 
         try {
-          // Atualizar tamanho do canvas se necessario
-          const vw = scannerVideo.videoWidth;
-          const vh = scannerVideo.videoHeight;
-
-          if (scanCanvas.width !== vw || scanCanvas.height !== vh) {
-            scanCanvas.width = vw;
-            scanCanvas.height = vh;
-            console.log('Canvas redimensionado para:', vw, 'x', vh);
-          }
-
-          // Desenhar frame atual no canvas
-          scanCtx.drawImage(scannerVideo, 0, 0, vw, vh);
-
-          // Tentar detectar diretamente do video (mais rapido)
-          let barcodes = [];
-          try {
-            barcodes = await barcodeDetector.detect(scannerVideo);
-          } catch (e1) {
-            // Se falhar com video, tentar com canvas
-            try {
-              barcodes = await barcodeDetector.detect(scanCanvas);
-            } catch (e2) {
-              // Ignorar erro silenciosamente
-            }
-          }
+          const barcodes = await barcodeDetector.detect(scannerVideo);
 
           if (barcodes.length > 0) {
             const code = barcodes[0].rawValue;
             const now = Date.now();
 
-            // Validar codigo (deve ser numerico para EAN/UPC)
-            const codigoLimpo = code.replace(/\D/g, '');
-            if (codigoLimpo.length < 8 || codigoLimpo.length > 14) {
-              console.log('Codigo invalido ignorado:', code);
-              requestAnimationFrame(scanFrame);
+            // Evitar leituras duplicadas (500ms)
+            if (code === lastScannedCode && (now - lastScanTime) < 500) {
               return;
             }
-
-            // Evitar leituras duplicadas (1000ms de debounce)
-            if (code === lastScannedCode && (now - lastScanTime) < 1000) {
-              requestAnimationFrame(scanFrame);
-              return;
-            }
-
-            console.log('Codigo detectado:', code, 'formato:', barcodes[0].format);
 
             lastScannedCode = code;
             lastScanTime = now;
             scanCount++;
             scanCountSpan.textContent = scanCount;
-            falhasConsecutivas = 0;
 
             // Feedback visual
             scanStatusText.textContent = "Codigo detectado!";
             scanStatusBar.className = 'success';
-            lastScanResult.textContent = codigoLimpo;
+            lastScanResult.textContent = code;
             lastScanResult.classList.add('visible');
 
             // Feedback sonoro
@@ -1467,45 +1408,33 @@
             }
 
             // Atualizar input
-            input.value = codigoLimpo;
+            input.value = code;
             clearButton.classList.add('visible');
 
             // Se modo continuo, continuar escaneando
             // Se nao, fechar e buscar
             if (!modoContinuoCheck.checked) {
-              scanningActive = false;
               setTimeout(() => {
                 fecharScanner();
                 buscar();
-              }, 500);
-              return;
+              }, 400);
             } else {
               // No modo continuo, fazer busca em background
               buscar();
 
-              // Resetar status apos 2s
+              // Resetar status apos 1.5s
               setTimeout(() => {
                 if (isScanning) {
                   scanStatusText.textContent = "Escaneando...";
                   scanStatusBar.className = '';
                 }
-              }, 2000);
+              }, 1500);
             }
-          } else {
-            falhasConsecutivas++;
           }
         } catch (e) {
-          console.warn('Erro na deteccao:', e.message);
+          // Ignorar erros de deteccao
         }
-
-        // Continuar escaneando
-        if (scanningActive && isScanning) {
-          requestAnimationFrame(scanFrame);
-        }
-      }
-
-      // Iniciar loop de scan
-      requestAnimationFrame(scanFrame);
+      }, 100);
     }
 
     function playBeep() {
@@ -1533,9 +1462,7 @@
     });
 
     function fecharScanner() {
-      console.log('Fechando scanner...');
       isScanning = false;
-      scanningActive = false;
 
       if (scanInterval) {
         clearInterval(scanInterval);
@@ -1543,10 +1470,7 @@
       }
 
       if (mediaStream) {
-        mediaStream.getTracks().forEach(track => {
-          track.stop();
-          console.log('Track parada:', track.kind);
-        });
+        mediaStream.getTracks().forEach(track => track.stop());
         mediaStream = null;
       }
 
@@ -1556,9 +1480,6 @@
       lastScanResult.classList.remove('visible');
       scanStatusText.textContent = "Aguardando camera...";
       scanStatusBar.className = '';
-      falhasConsecutivas = 0;
-
-      console.log('Scanner fechado');
     }
 
     // ========================================
@@ -1850,10 +1771,13 @@
         const data = await resp.json();
 
         if (data.ok && data.produtos.length > 0) {
+          const isOnline = data.fonte === 'online';
+          const fonteLabel = isOnline ? '<span style="color: #1565c0; font-size: 10px; margin-left: 5px;">(Online)</span>' : '';
+
           autocompleteDropdown.innerHTML = data.produtos.map(p => `
             <div class="autocomplete-item" data-codigo="${p.codigo}" data-nome="${p.nome}">
-              <div class="autocomplete-item-nome">${p.nome}</div>
-              <div class="autocomplete-item-codigo">Codigo: ${p.codigo}</div>
+              <div class="autocomplete-item-nome">${p.nome}${p.origem === 'Open Food Facts' ? ' <span style="color:#1565c0;font-size:10px;">(Online)</span>' : ''}</div>
+              <div class="autocomplete-item-codigo">Codigo: ${p.codigo}${p.marca ? ' | ' + p.marca : ''}</div>
             </div>
           `).join('');
           autocompleteDropdown.classList.add('visible');
