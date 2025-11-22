@@ -409,6 +409,28 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      /* Garantir que o video nao vire/rotacione */
+      transform: none !important;
+      -webkit-transform: none !important;
+    }
+
+    /* Forcar orientacao natural em todos os casos */
+    @media screen and (orientation: portrait) {
+      #scanner-container.active {
+        transform: none !important;
+      }
+      #scanner-video {
+        transform: none !important;
+      }
+    }
+
+    @media screen and (orientation: landscape) {
+      #scanner-container.active {
+        transform: none !important;
+      }
+      #scanner-video {
+        transform: none !important;
+      }
     }
 
     /* Overlay com marcas de scanner */
@@ -922,7 +944,30 @@
     <button id="close-modal">X Fechar</button>
   </div>
 
+  <!-- Polyfill para BarcodeDetector - versao mais confiavel -->
   <script src="https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es2018.min.js"></script>
+  <script>
+    // Inicializar detector antecipadamente
+    (async function() {
+      try {
+        // Aguardar polyfill carregar
+        await new Promise(r => setTimeout(r, 100));
+
+        if (typeof BarcodeDetector !== 'undefined') {
+          console.log('BarcodeDetector disponivel, preparando...');
+
+          // Pre-criar detector para acelerar primeira leitura
+          const formatos = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'];
+          const detector = new BarcodeDetector({ formats: formatos });
+          console.log('Detector pre-inicializado com sucesso');
+        } else {
+          console.warn('BarcodeDetector nao disponivel apos polyfill');
+        }
+      } catch (e) {
+        console.warn('Erro na pre-inicializacao:', e.message);
+      }
+    })();
+  </script>
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
@@ -947,19 +992,51 @@
     let lastScannedCode = "";
     let lastScanTime = 0;
 
-    // Inicializar BarcodeDetector
+    // Inicializar BarcodeDetector com todos os formatos possiveis
     async function initBarcodeDetector() {
-      if ('BarcodeDetector' in window) {
-        const formats = await BarcodeDetector.getSupportedFormats();
-        console.log('Formatos suportados:', formats);
+      try {
+        // Verificar se polyfill carregou
+        if (typeof BarcodeDetector === 'undefined') {
+          console.error('BarcodeDetector nao disponivel!');
+          return false;
+        }
+
+        // Formatos mais comuns de codigo de barras
+        const formatosDesejados = [
+          'ean_13', 'ean_8', 'upc_a', 'upc_e',
+          'code_128', 'code_39', 'code_93',
+          'codabar', 'itf', 'qr_code', 'data_matrix'
+        ];
+
+        let formatosSuportados = formatosDesejados;
+
+        // Verificar formatos suportados
+        if (BarcodeDetector.getSupportedFormats) {
+          try {
+            const todosFormatos = await BarcodeDetector.getSupportedFormats();
+            console.log('Formatos suportados pelo dispositivo:', todosFormatos);
+            formatosSuportados = formatosDesejados.filter(f => todosFormatos.includes(f));
+          } catch (e) {
+            console.warn('Nao foi possivel verificar formatos:', e.message);
+          }
+        }
+
+        // Usar pelo menos os formatos basicos
+        if (formatosSuportados.length === 0) {
+          formatosSuportados = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'];
+        }
+
+        console.log('Usando formatos:', formatosSuportados);
+
         barcodeDetector = new BarcodeDetector({
-          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
+          formats: formatosSuportados
         });
-      } else {
-        console.warn('BarcodeDetector nao suportado nativamente, usando polyfill');
-        barcodeDetector = new BarcodeDetector({
-          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
-        });
+
+        console.log('BarcodeDetector inicializado com sucesso!');
+        return true;
+      } catch (e) {
+        console.error('Erro ao inicializar BarcodeDetector:', e);
+        return false;
       }
     }
 
@@ -1148,39 +1225,84 @@
       scanStatusBar.className = '';
       scanCount = 0;
       scanCountSpan.textContent = '0';
+      lastScanResult.classList.remove('visible');
 
       // Inicializar detector de codigo de barras
       if (!barcodeDetector) {
-        try {
-          await initBarcodeDetector();
-        } catch (e) {
-          console.warn('Erro ao inicializar detector:', e);
+        const sucesso = await initBarcodeDetector();
+        if (!sucesso) {
+          console.error('Falha ao inicializar detector de barcode');
+          scanStatusText.textContent = "Erro: detector de barcode nao disponivel";
         }
       }
 
       // Tentar abrir camera com diferentes configuracoes
+      // Prioridade: camera traseira, alta resolucao, foco continuo
       let cameraAberta = false;
 
       const tentativas = [
-        { video: { facingMode: 'environment' } },
-        { video: { facingMode: { ideal: 'environment' } } },
-        { video: true }
+        // 1. Camera traseira com resolucao alta (ideal para leitura de barcode)
+        {
+          video: {
+            facingMode: { exact: 'environment' },
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            aspectRatio: { ideal: 16/9 }
+          }
+        },
+        // 2. Camera traseira com resolucao media
+        {
+          video: {
+            facingMode: { exact: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        },
+        // 3. Camera traseira simples
+        {
+          video: {
+            facingMode: 'environment'
+          }
+        },
+        // 4. Qualquer camera traseira (ideal, nao exato)
+        {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        },
+        // 5. Qualquer camera disponivel
+        {
+          video: true
+        }
       ];
 
       for (const constraints of tentativas) {
         if (cameraAberta) break;
         try {
-          console.log('Tentando:', JSON.stringify(constraints));
+          console.log('Tentando constraints:', JSON.stringify(constraints));
           mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-          cameraAberta = true;
-          console.log('Camera aberta com sucesso!');
+
+          // Verificar se realmente conseguiu abrir
+          const tracks = mediaStream.getVideoTracks();
+          if (tracks.length > 0) {
+            const settings = tracks[0].getSettings();
+            console.log('Camera aberta:', {
+              width: settings.width,
+              height: settings.height,
+              facingMode: settings.facingMode,
+              deviceId: settings.deviceId
+            });
+            cameraAberta = true;
+          }
         } catch (e) {
-          console.warn('Falha com constraints:', constraints, e.message);
+          console.warn('Falha com constraints:', e.name, e.message);
         }
       }
 
       if (!cameraAberta || !mediaStream) {
-        alert('Nao foi possivel acessar a camera. Verifique as permissoes.');
+        alert('Nao foi possivel acessar a camera. Verifique as permissoes do navegador.');
         fecharScanner();
         return;
       }
@@ -1188,27 +1310,72 @@
       try {
         scannerVideo.srcObject = mediaStream;
 
-        // Tentar aplicar foco continuo (opcional)
+        // Tentar otimizar a camera para leitura de barcode
         try {
           const track = mediaStream.getVideoTracks()[0];
           if (track && track.getCapabilities) {
             const capabilities = track.getCapabilities();
+            const constraintsAvancadas = [];
+
+            // Foco continuo (melhor para scanner)
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+              constraintsAvancadas.push({ focusMode: 'continuous' });
+              console.log('Foco continuo ativado');
+            }
+
+            // Exposicao automatica
+            if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+              constraintsAvancadas.push({ exposureMode: 'continuous' });
+            }
+
+            // Balanco de branco automatico
+            if (capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes('continuous')) {
+              constraintsAvancadas.push({ whiteBalanceMode: 'continuous' });
+            }
+
+            // Torch/flash desligado (evitar reflexo)
+            if (capabilities.torch) {
+              constraintsAvancadas.push({ torch: false });
+            }
+
+            if (constraintsAvancadas.length > 0) {
+              await track.applyConstraints({ advanced: constraintsAvancadas });
+              console.log('Constraints avancadas aplicadas:', constraintsAvancadas);
             }
           }
         } catch (e) {
-          console.warn('Foco continuo nao suportado:', e.message);
+          console.warn('Nao foi possivel aplicar otimizacoes:', e.message);
         }
 
-        await scannerVideo.play();
-        isScanning = true;
+        // Esperar video estar pronto antes de iniciar deteccao
+        scannerVideo.onloadedmetadata = async () => {
+          try {
+            await scannerVideo.play();
+            isScanning = true;
+            scanStatusText.textContent = "Camera pronta - aponte para o codigo";
+            scanStatusBar.className = '';
+            console.log('Video iniciado, resolucao:', scannerVideo.videoWidth, 'x', scannerVideo.videoHeight);
 
-        scanStatusText.textContent = "Camera pronta - aponte para o codigo";
-        scanStatusBar.className = '';
+            // Iniciar deteccao continua
+            startScanning();
+          } catch (playErr) {
+            console.error('Erro ao iniciar reproducao:', playErr);
+            scanStatusText.textContent = "Erro ao iniciar video";
+          }
+        };
 
-        // Iniciar deteccao continua
-        startScanning();
+        // Fallback caso onloadedmetadata nao dispare
+        setTimeout(async () => {
+          if (!isScanning && scannerVideo.readyState >= 2) {
+            try {
+              await scannerVideo.play();
+              isScanning = true;
+              startScanning();
+            } catch (e) {
+              console.warn('Fallback play falhou:', e.message);
+            }
+          }
+        }, 1000);
 
       } catch (err) {
         console.error('Erro ao iniciar video:', err);
@@ -1217,33 +1384,92 @@
       }
     }
 
+    // Canvas para processamento de imagem (melhora deteccao)
+    let scanCanvas = null;
+    let scanCtx = null;
+    let falhasConsecutivas = 0;
+
     function startScanning() {
       if (scanInterval) clearInterval(scanInterval);
 
+      // Criar canvas para melhor deteccao
+      if (!scanCanvas) {
+        scanCanvas = document.createElement('canvas');
+        scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+      }
+
+      falhasConsecutivas = 0;
+
+      // Intervalo mais rapido para melhor deteccao (15fps)
       scanInterval = setInterval(async () => {
-        if (!isScanning || !barcodeDetector || scannerVideo.readyState !== 4) return;
+        if (!isScanning || !barcodeDetector) return;
+
+        // Verificar se video esta pronto
+        if (scannerVideo.readyState < 2 || scannerVideo.videoWidth === 0) {
+          return;
+        }
 
         try {
-          const barcodes = await barcodeDetector.detect(scannerVideo);
+          // Atualizar tamanho do canvas se necessario
+          const vw = scannerVideo.videoWidth;
+          const vh = scannerVideo.videoHeight;
+
+          if (scanCanvas.width !== vw || scanCanvas.height !== vh) {
+            scanCanvas.width = vw;
+            scanCanvas.height = vh;
+            console.log('Canvas redimensionado para:', vw, 'x', vh);
+          }
+
+          // Desenhar frame atual no canvas
+          scanCtx.drawImage(scannerVideo, 0, 0, vw, vh);
+
+          // Tentar detectar barcode diretamente do video primeiro
+          let barcodes = [];
+          try {
+            barcodes = await barcodeDetector.detect(scannerVideo);
+          } catch (e1) {
+            // Se falhar com video, tentar com canvas
+            try {
+              barcodes = await barcodeDetector.detect(scanCanvas);
+            } catch (e2) {
+              // Tentar com ImageData (ultimo recurso)
+              try {
+                const imageData = scanCtx.getImageData(0, 0, vw, vh);
+                barcodes = await barcodeDetector.detect(imageData);
+              } catch (e3) {
+                // Ignorar
+              }
+            }
+          }
 
           if (barcodes.length > 0) {
             const code = barcodes[0].rawValue;
             const now = Date.now();
 
-            // Evitar leituras duplicadas muito rapidas (500ms)
-            if (code === lastScannedCode && (now - lastScanTime) < 500) {
+            // Validar codigo (deve ser numerico para EAN/UPC)
+            const codigoLimpo = code.replace(/\D/g, '');
+            if (codigoLimpo.length < 8 || codigoLimpo.length > 14) {
+              console.log('Codigo invalido ignorado:', code);
               return;
             }
+
+            // Evitar leituras duplicadas (800ms de debounce)
+            if (code === lastScannedCode && (now - lastScanTime) < 800) {
+              return;
+            }
+
+            console.log('Codigo detectado:', code, 'formato:', barcodes[0].format);
 
             lastScannedCode = code;
             lastScanTime = now;
             scanCount++;
             scanCountSpan.textContent = scanCount;
+            falhasConsecutivas = 0;
 
             // Feedback visual
             scanStatusText.textContent = "Codigo detectado!";
             scanStatusBar.className = 'success';
-            lastScanResult.textContent = code;
+            lastScanResult.textContent = codigoLimpo;
             lastScanResult.classList.add('visible');
 
             // Feedback sonoro
@@ -1255,7 +1481,7 @@
             }
 
             // Atualizar input
-            input.value = code;
+            input.value = codigoLimpo;
             clearButton.classList.add('visible');
 
             // Se modo continuo, continuar escaneando
@@ -1264,24 +1490,32 @@
               setTimeout(() => {
                 fecharScanner();
                 buscar();
-              }, 400);
+              }, 500);
             } else {
               // No modo continuo, fazer busca em background
               buscar();
 
-              // Resetar status apos 1.5s
+              // Resetar status apos 2s
               setTimeout(() => {
                 if (isScanning) {
                   scanStatusText.textContent = "Pronto para proxima leitura";
                   scanStatusBar.className = '';
                 }
-              }, 1500);
+              }, 2000);
+            }
+          } else {
+            falhasConsecutivas++;
+
+            // Mostrar feedback se estiver demorando
+            if (falhasConsecutivas > 50 && falhasConsecutivas % 30 === 0) {
+              scanStatusText.textContent = "Aproxime o codigo de barras...";
+              scanStatusBar.className = 'reading';
             }
           }
         } catch (e) {
-          // Ignorar erros de deteccao
+          console.warn('Erro na deteccao:', e.message);
         }
-      }, 100); // Verificar a cada 100ms (10fps de deteccao)
+      }, 66); // ~15fps para melhor deteccao
     }
 
     function playBeep() {
@@ -1309,6 +1543,7 @@
     });
 
     function fecharScanner() {
+      console.log('Fechando scanner...');
       isScanning = false;
 
       if (scanInterval) {
@@ -1317,15 +1552,22 @@
       }
 
       if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('Track parada:', track.kind);
+        });
         mediaStream = null;
       }
 
       scannerVideo.srcObject = null;
+      scannerVideo.onloadedmetadata = null;
       scannerContainer.classList.remove('active');
       lastScanResult.classList.remove('visible');
       scanStatusText.textContent = "Aguardando camera...";
       scanStatusBar.className = '';
+      falhasConsecutivas = 0;
+
+      console.log('Scanner fechado');
     }
 
     // ========================================
