@@ -413,6 +413,24 @@
       object-fit: cover;
     }
 
+    /* Ajustar area de scan para orientacao portrait */
+    @media screen and (orientation: portrait) {
+      #scan-area {
+        width: 90%;
+        max-width: none;
+        height: 100px;
+      }
+    }
+
+    /* Ajustar area de scan para orientacao landscape */
+    @media screen and (orientation: landscape) {
+      #scan-area {
+        width: 60%;
+        max-width: 500px;
+        height: 120px;
+      }
+    }
+
     /* Overlay com marcas de scanner */
     #scanner-overlay {
       position: absolute;
@@ -1163,10 +1181,19 @@
       // Tentar abrir camera com diferentes configuracoes
       let cameraAberta = false;
 
-      // Tentativa 1: Camera traseira simples
-      const tentativas = [
+      // Detectar orientacao atual da tela
+      const isPortrait = window.innerHeight > window.innerWidth;
+
+      // Configurar constraints baseado na orientacao
+      const tentativas = isPortrait ? [
+        // Portrait: altura maior que largura
+        { video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 1280 } } },
         { video: { facingMode: 'environment' } },
-        { video: { facingMode: { ideal: 'environment' } } },
+        { video: true }
+      ] : [
+        // Landscape: largura maior que altura
+        { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        { video: { facingMode: 'environment' } },
         { video: true }
       ];
 
