@@ -646,76 +646,99 @@ async function buscarCosmos(codigo) {
 // SALVA PRODUTOS ENCONTRADOS ONLINE NO EXCEL
 // -------------------------------------------
 function salvarProduto(codigo, nome, fonte) {
+  console.log(`\n📝 SALVANDO PRODUTO ONLINE:`);
+  console.log(`   Código: ${codigo}`);
+  console.log(`   Nome: ${nome}`);
+  console.log(`   Fonte: ${fonte}`);
+
   const excelPath = path.join(projectRoot, "data", "OK BASE DO APP COLETADO.xlsx");
   const jsonPath = path.join(projectRoot, "data", "produtos.json");
 
   // Salvar no JSON (cache rápido)
-  let lista = [];
   try {
-    if (fs.existsSync(jsonPath)) {
-      lista = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+    let lista = [];
+    try {
+      if (fs.existsSync(jsonPath)) {
+        const conteudo = fs.readFileSync(jsonPath, "utf8");
+        lista = JSON.parse(conteudo);
+        if (!Array.isArray(lista)) lista = [];
+      }
+    } catch (e) {
+      console.warn("⚠️ Erro ao ler JSON, criando novo:", e.message);
+      lista = [];
     }
-  } catch (e) {
-    lista = [];
-  }
 
-  if (!lista.find(x => x.codigo === codigo)) {
-    lista.push({ codigo, nome, fonte });
-    fs.writeFileSync(jsonPath, JSON.stringify(lista, null, 2));
+    if (!lista.find(x => x.codigo === codigo)) {
+      lista.push({ codigo, nome, fonte, data: new Date().toISOString() });
+      fs.writeFileSync(jsonPath, JSON.stringify(lista, null, 2));
+      console.log(`✅ Produto salvo no JSON cache`);
+    }
+  } catch (errJson) {
+    console.error("❌ Erro ao salvar no JSON:", errJson.message);
   }
 
   // Salvar no SQLite também
-  salvarProdutoOnlineSQLite(codigo, nome, '', '', fonte);
-
-  // Salvar no Excel
-  let workbook;
-  let dados = [];
-
-  if (fs.existsSync(excelPath)) {
-    try {
-      workbook = XLSX.readFile(excelPath);
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      dados = XLSX.utils.sheet_to_json(sheet);
-    } catch (e) {
-      console.error("Erro ao ler Excel existente:", e);
-      dados = [];
-    }
+  try {
+    salvarProdutoOnlineSQLite(codigo, nome, '', '', fonte);
+  } catch (errSqlite) {
+    console.error("❌ Erro ao salvar no SQLite:", errSqlite.message);
   }
 
-  const jaExiste = dados.some(item => {
-    const codigoExistente = normalizarCodigo(item["Código de Barra"] || item["codigo"] || item["Cod. de Barra"]);
-    return codigoExistente === codigo;
-  });
+  // Salvar no Excel
+  try {
+    let dados = [];
 
-  if (!jaExiste) {
-    dados.push({
-      "Código de Barra": codigo,
-      "Nome do Produto": nome,
-      "Fonte": fonte,
-      "Data de Coleta": new Date().toLocaleString("pt-BR")
+    if (fs.existsSync(excelPath)) {
+      try {
+        const workbook = XLSX.readFile(excelPath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        dados = XLSX.utils.sheet_to_json(sheet);
+        if (!Array.isArray(dados)) dados = [];
+      } catch (e) {
+        console.warn("⚠️ Erro ao ler Excel existente, criando novo:", e.message);
+        dados = [];
+      }
+    }
+
+    const jaExiste = dados.some(item => {
+      const codigoExistente = normalizarCodigo(item["Código de Barra"] || item["codigo"] || item["Cod. de Barra"] || "");
+      return codigoExistente === codigo;
     });
 
-    const novaSheet = XLSX.utils.json_to_sheet(dados);
-
-    // Ajustar largura das colunas
-    novaSheet['!cols'] = [
-      { wch: 18 }, // Código de Barra
-      { wch: 50 }, // Nome do Produto
-      { wch: 20 }, // Fonte
-      { wch: 20 }  // Data de Coleta
-    ];
-
-    const novoWorkbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(novoWorkbook, novaSheet, "Produtos Coletados");
-
-    XLSX.writeFile(novoWorkbook, excelPath);
-    console.log(`✅ Produto salvo no Excel: ${codigo} - ${nome} (fonte: ${fonte})`);
-
-    if (onedriveHabilitado()) {
-      uploadParaOneDrive(excelPath).catch(err => {
-        console.error("⚠️ Erro ao sincronizar com OneDrive:", err.message);
+    if (!jaExiste) {
+      dados.push({
+        "Código de Barra": codigo,
+        "Nome do Produto": nome,
+        "Fonte": fonte,
+        "Data de Coleta": new Date().toLocaleString("pt-BR")
       });
+
+      const novaSheet = XLSX.utils.json_to_sheet(dados);
+
+      // Ajustar largura das colunas
+      novaSheet['!cols'] = [
+        { wch: 18 }, // Código de Barra
+        { wch: 50 }, // Nome do Produto
+        { wch: 20 }, // Fonte
+        { wch: 20 }  // Data de Coleta
+      ];
+
+      const novoWorkbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(novoWorkbook, novaSheet, "Produtos Coletados");
+
+      XLSX.writeFile(novoWorkbook, excelPath);
+      console.log(`✅ Produto salvo no Excel: ${codigo} - ${nome} (fonte: ${fonte})`);
+
+      if (onedriveHabilitado()) {
+        uploadParaOneDrive(excelPath).catch(err => {
+          console.error("⚠️ Erro ao sincronizar com OneDrive:", err.message);
+        });
+      }
+    } else {
+      console.log(`ℹ️ Produto já existe no Excel, não duplicando`);
     }
+  } catch (errExcel) {
+    console.error("❌ Erro ao salvar no Excel:", errExcel.message);
   }
 }
 
