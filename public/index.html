@@ -396,124 +396,31 @@
     }
 
     #scanner-video-wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    #scanner-video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      /* Garantir que o video nao vire/rotacione */
-      transform: none !important;
-      -webkit-transform: none !important;
-    }
-
-    /* Forcar orientacao natural em todos os casos */
-    @media screen and (orientation: portrait) {
-      #scanner-container.active {
-        transform: none !important;
-      }
-      #scanner-video {
-        transform: none !important;
-      }
-    }
-
-    @media screen and (orientation: landscape) {
-      #scanner-container.active {
-        transform: none !important;
-      }
-      #scanner-video {
-        transform: none !important;
-      }
-    }
-
-    /* Overlay com marcas de scanner */
-    #scanner-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    /* Area de leitura retangular com cantos verdes */
-    #scan-area {
-      position: relative;
-      width: 80%;
-      max-width: 400px;
-      height: 120px;
-      border: 2px solid rgba(102, 247, 204, 0.5);
-      border-radius: 8px;
-      background: transparent;
+    /* Estilos para o html5-qrcode */
+    #scanner-video-wrapper video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
     }
 
-    /* Cantos verdes do scanner */
-    .scan-corner {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      border-color: #66F7CC;
-      border-style: solid;
-      border-width: 0;
+    #scanner-video-wrapper #qr-shaded-region {
+      border-color: #66F7CC !important;
     }
 
-    .scan-corner.top-left {
-      top: -2px;
-      left: -2px;
-      border-top-width: 4px;
-      border-left-width: 4px;
-      border-top-left-radius: 8px;
+    /* Esconder elementos desnecessarios do html5-qrcode */
+    #scanner-video-wrapper > div > img {
+      display: none !important;
     }
 
-    .scan-corner.top-right {
-      top: -2px;
-      right: -2px;
-      border-top-width: 4px;
-      border-right-width: 4px;
-      border-top-right-radius: 8px;
-    }
-
-    .scan-corner.bottom-left {
-      bottom: -2px;
-      left: -2px;
-      border-bottom-width: 4px;
-      border-left-width: 4px;
-      border-bottom-left-radius: 8px;
-    }
-
-    .scan-corner.bottom-right {
-      bottom: -2px;
-      right: -2px;
-      border-bottom-width: 4px;
-      border-right-width: 4px;
-      border-bottom-right-radius: 8px;
-    }
-
-    /* Linha de scan animada */
-    #scan-line {
-      position: absolute;
-      top: 50%;
-      left: 5%;
-      width: 90%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, #66F7CC, transparent);
-      animation: scan-pulse 1.5s ease-in-out infinite;
-      box-shadow: 0 0 10px #66F7CC, 0 0 20px #66F7CC;
-    }
-
-    @keyframes scan-pulse {
-      0%, 100% { opacity: 0.4; transform: scaleX(0.8); }
-      50% { opacity: 1; transform: scaleX(1); }
+    #scanner-video-wrapper button {
+      display: none !important;
     }
 
     /* Texto de instrucao */
@@ -886,56 +793,44 @@
 
   <!-- CONTAINER DO SCANNER PROFISSIONAL -->
   <div id="scanner-container">
-    <!-- Video da camera -->
-    <div id="scanner-video-wrapper">
-      <video id="scanner-video" autoplay playsinline></video>
+    <!-- Video da camera (html5-qrcode vai renderizar aqui) -->
+    <div id="scanner-video-wrapper"></div>
+    <video id="scanner-video" style="display:none;"></video>
 
-      <!-- Overlay com marcas -->
-      <div id="scanner-overlay">
-        <div id="scan-area">
-          <div class="scan-corner top-left"></div>
-          <div class="scan-corner top-right"></div>
-          <div class="scan-corner bottom-left"></div>
-          <div class="scan-corner bottom-right"></div>
-          <div id="scan-line"></div>
-        </div>
-      </div>
-
-      <!-- Status -->
-      <div id="scan-status-bar">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-          <circle cx="12" cy="13" r="4"></circle>
-        </svg>
-        <span id="scan-status-text">Aguardando camera...</span>
-      </div>
-
-      <!-- Contador -->
-      <div id="scan-counter">Leituras: <span id="scan-count">0</span></div>
-
-      <!-- Toggle modo continuo -->
-      <div class="scanner-mode-toggle">
-        <label>
-          <input type="checkbox" id="modo-continuo" checked>
-          Modo continuo (camera sempre aberta)
-        </label>
-      </div>
-
-      <!-- Ultimo codigo lido -->
-      <div id="last-scan-result"></div>
-
-      <!-- Instrucao -->
-      <div id="scan-instruction">Posicione o codigo de barras dentro da area verde</div>
-
-      <!-- Botao fechar -->
-      <button id="close-scanner-btn">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-        Fechar Camera
-      </button>
+    <!-- Status -->
+    <div id="scan-status-bar">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+      <span id="scan-status-text">Aguardando camera...</span>
     </div>
+
+    <!-- Contador -->
+    <div id="scan-counter">Leituras: <span id="scan-count">0</span></div>
+
+    <!-- Toggle modo continuo -->
+    <div class="scanner-mode-toggle">
+      <label>
+        <input type="checkbox" id="modo-continuo" checked>
+        Modo continuo (camera sempre aberta)
+      </label>
+    </div>
+
+    <!-- Ultimo codigo lido -->
+    <div id="last-scan-result"></div>
+
+    <!-- Instrucao -->
+    <div id="scan-instruction">Posicione o codigo de barras dentro da area verde</div>
+
+    <!-- Botao fechar -->
+    <button id="close-scanner-btn">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+      Fechar Camera
+    </button>
   </div>
 
   <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
@@ -944,52 +839,8 @@
     <button id="close-modal">X Fechar</button>
   </div>
 
-  <!-- Polyfill para BarcodeDetector - usando ZXing-js como base -->
-  <script src="https://unpkg.com/@AktaryTech/barcode-detector@2.2.7/dist/es2018.min.js"></script>
-  <script>
-    // Detector global que sera inicializado
-    let detectorGlobal = null;
-    let polyfillCarregado = false;
-
-    // Inicializar detector antecipadamente
-    (async function() {
-      try {
-        // Aguardar polyfill carregar completamente
-        let tentativas = 0;
-        while (typeof BarcodeDetector === 'undefined' && tentativas < 30) {
-          await new Promise(r => setTimeout(r, 100));
-          tentativas++;
-        }
-
-        if (typeof BarcodeDetector !== 'undefined') {
-          console.log('BarcodeDetector disponivel, preparando...');
-
-          // Verificar formatos suportados
-          let formatos = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'];
-
-          if (BarcodeDetector.getSupportedFormats) {
-            try {
-              const suportados = await BarcodeDetector.getSupportedFormats();
-              console.log('Formatos suportados:', suportados);
-              formatos = formatos.filter(f => suportados.includes(f));
-              if (formatos.length === 0) formatos = suportados.slice(0, 5);
-            } catch(e) {
-              console.warn('Erro ao verificar formatos:', e);
-            }
-          }
-
-          // Pre-criar detector para acelerar primeira leitura
-          detectorGlobal = new BarcodeDetector({ formats: formatos });
-          polyfillCarregado = true;
-          console.log('Detector pre-inicializado com formatos:', formatos);
-        } else {
-          console.error('BarcodeDetector NAO disponivel apos 3s!');
-        }
-      } catch (e) {
-        console.error('Erro na pre-inicializacao:', e.message);
-      }
-    })();
-  </script>
+  <!-- Biblioteca html5-qrcode - muito mais confiavel para codigos de barras -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
@@ -1004,76 +855,13 @@
     const modoContinuoCheck = document.getElementById("modo-continuo");
     const clearButton = document.getElementById("clear-button");
 
-    let mediaStream = null;
-    let barcodeDetector = null;
-    let scanInterval = null;
+    let html5QrCode = null;
     let isScanning = false;
     let ultimaBusca = "";
     let buscaTimeout = null;
     let scanCount = 0;
     let lastScannedCode = "";
     let lastScanTime = 0;
-
-    // Inicializar BarcodeDetector com todos os formatos possiveis
-    async function initBarcodeDetector() {
-      try {
-        // Usar detector global se ja foi inicializado
-        if (detectorGlobal && polyfillCarregado) {
-          barcodeDetector = detectorGlobal;
-          console.log('Usando detector global pre-inicializado');
-          return true;
-        }
-
-        // Aguardar polyfill carregar
-        let tentativas = 0;
-        while (typeof BarcodeDetector === 'undefined' && tentativas < 50) {
-          await new Promise(r => setTimeout(r, 100));
-          tentativas++;
-        }
-
-        // Verificar se polyfill carregou
-        if (typeof BarcodeDetector === 'undefined') {
-          console.error('BarcodeDetector nao disponivel apos espera!');
-          return false;
-        }
-
-        // Formatos mais comuns de codigo de barras
-        const formatosDesejados = [
-          'ean_13', 'ean_8', 'upc_a', 'upc_e',
-          'code_128', 'code_39', 'qr_code'
-        ];
-
-        let formatosSuportados = formatosDesejados;
-
-        // Verificar formatos suportados
-        if (BarcodeDetector.getSupportedFormats) {
-          try {
-            const todosFormatos = await BarcodeDetector.getSupportedFormats();
-            console.log('Formatos suportados pelo dispositivo:', todosFormatos);
-            formatosSuportados = formatosDesejados.filter(f => todosFormatos.includes(f));
-          } catch (e) {
-            console.warn('Nao foi possivel verificar formatos:', e.message);
-          }
-        }
-
-        // Usar pelo menos os formatos basicos
-        if (formatosSuportados.length === 0) {
-          formatosSuportados = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'];
-        }
-
-        console.log('Criando detector com formatos:', formatosSuportados);
-
-        barcodeDetector = new BarcodeDetector({
-          formats: formatosSuportados
-        });
-
-        console.log('BarcodeDetector inicializado com sucesso!');
-        return true;
-      } catch (e) {
-        console.error('Erro ao inicializar BarcodeDetector:', e);
-        return false;
-      }
-    }
 
     // LIMPAR INPUT AO CLICAR NELE
     input.addEventListener('click', () => {
@@ -1209,19 +997,34 @@
       }
 
       ultimaBusca = codigo;
-      resultado.innerHTML = `<p style='margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;'>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="animation: pulse 1s ease-in-out infinite;">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
-        Buscando...
-      </p>
-      <style>
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-      </style>`;
+
+      // Mostrar indicador de busca com animacao
+      const mostrarBuscando = (texto) => {
+        resultado.innerHTML = `
+          <div style="margin-top: 20px; text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 10px; padding: 15px 20px; background: #e3f2fd; border-radius: 10px;">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#1976d2" stroke-width="2" style="animation: spin 1s linear infinite;">
+                <circle cx="12" cy="12" r="10" stroke-opacity="0.3"></circle>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+              </svg>
+              <span style="color: #1976d2; font-weight: 500;">${texto}</span>
+            </div>
+          </div>
+          <style>
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+          </style>`;
+      };
+
+      mostrarBuscando('Buscando na base local...');
+
+      // Timeout para mostrar mensagem de busca externa
+      const timeoutExterno = setTimeout(() => {
+        mostrarBuscando('Pesquisando em fontes externas...');
+      }, 1500);
 
       try {
         const resp = await fetch(`/consulta/${codigo}`);
+        clearTimeout(timeoutExterno);
         const data = await resp.json();
 
         if (!data.ok) {
@@ -1229,13 +1032,20 @@
             <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 10px; color: #c62828;">
               <strong>Produto nao encontrado</strong>
               <p style="margin: 5px 0 0 0; font-size: 14px;">Codigo: ${codigo}</p>
+              <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">Buscamos em todas as fontes disponiveis</p>
             </div>
           `;
           return;
         }
 
+        // Se veio de fonte online, mostrar mensagem especial
+        if (data.origem === 'online') {
+          console.log('Produto encontrado online e salvo:', data.fonte);
+        }
+
         mostrarProduto(data.produto, data.origem, data.fonte);
       } catch (error) {
+        clearTimeout(timeoutExterno);
         console.error("Erro na busca:", error);
         resultado.innerHTML = `
           <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; color: #e65100;">
@@ -1248,7 +1058,7 @@
     }
 
     // ========================================
-    // SCANNER PROFISSIONAL
+    // SCANNER COM HTML5-QRCODE (muito mais confiavel)
     // ========================================
     document.getElementById("scanner").onclick = async () => {
       await abrirScanner();
@@ -1262,323 +1072,174 @@
       scanCountSpan.textContent = '0';
       lastScanResult.classList.remove('visible');
 
-      // Inicializar detector de codigo de barras
-      if (!barcodeDetector) {
-        const sucesso = await initBarcodeDetector();
-        if (!sucesso) {
-          console.error('Falha ao inicializar detector de barcode');
-          scanStatusText.textContent = "Erro: detector de barcode nao disponivel";
-        }
-      }
-
-      // Tentar abrir camera com diferentes configuracoes
-      // Prioridade: camera traseira, alta resolucao, foco continuo
-      let cameraAberta = false;
-
-      const tentativas = [
-        // 1. Camera traseira com resolucao alta (ideal para leitura de barcode)
-        {
-          video: {
-            facingMode: { exact: 'environment' },
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
-            aspectRatio: { ideal: 16/9 }
-          }
-        },
-        // 2. Camera traseira com resolucao media
-        {
-          video: {
-            facingMode: { exact: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        },
-        // 3. Camera traseira simples
-        {
-          video: {
-            facingMode: 'environment'
-          }
-        },
-        // 4. Qualquer camera traseira (ideal, nao exato)
-        {
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        },
-        // 5. Qualquer camera disponivel
-        {
-          video: true
-        }
-      ];
-
-      for (const constraints of tentativas) {
-        if (cameraAberta) break;
-        try {
-          console.log('Tentando constraints:', JSON.stringify(constraints));
-          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-          // Verificar se realmente conseguiu abrir
-          const tracks = mediaStream.getVideoTracks();
-          if (tracks.length > 0) {
-            const settings = tracks[0].getSettings();
-            console.log('Camera aberta:', {
-              width: settings.width,
-              height: settings.height,
-              facingMode: settings.facingMode,
-              deviceId: settings.deviceId
-            });
-            cameraAberta = true;
-          }
-        } catch (e) {
-          console.warn('Falha com constraints:', e.name, e.message);
-        }
-      }
-
-      if (!cameraAberta || !mediaStream) {
-        alert('Nao foi possivel acessar a camera. Verifique as permissoes do navegador.');
-        fecharScanner();
-        return;
-      }
-
       try {
-        scannerVideo.srcObject = mediaStream;
-
-        // Tentar otimizar a camera para leitura de barcode
-        try {
-          const track = mediaStream.getVideoTracks()[0];
-          if (track && track.getCapabilities) {
-            const capabilities = track.getCapabilities();
-            const constraintsAvancadas = [];
-
-            // Foco continuo (melhor para scanner)
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              constraintsAvancadas.push({ focusMode: 'continuous' });
-              console.log('Foco continuo ativado');
-            }
-
-            // Exposicao automatica
-            if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
-              constraintsAvancadas.push({ exposureMode: 'continuous' });
-            }
-
-            // Balanco de branco automatico
-            if (capabilities.whiteBalanceMode && capabilities.whiteBalanceMode.includes('continuous')) {
-              constraintsAvancadas.push({ whiteBalanceMode: 'continuous' });
-            }
-
-            // Torch/flash desligado (evitar reflexo)
-            if (capabilities.torch) {
-              constraintsAvancadas.push({ torch: false });
-            }
-
-            if (constraintsAvancadas.length > 0) {
-              await track.applyConstraints({ advanced: constraintsAvancadas });
-              console.log('Constraints avancadas aplicadas:', constraintsAvancadas);
-            }
-          }
-        } catch (e) {
-          console.warn('Nao foi possivel aplicar otimizacoes:', e.message);
+        // Criar instancia do scanner se nao existir
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("scanner-video-wrapper", { verbose: false });
         }
 
-        // Esperar video estar pronto antes de iniciar deteccao
-        scannerVideo.onloadedmetadata = async () => {
-          try {
-            await scannerVideo.play();
-            isScanning = true;
-            scanStatusText.textContent = "Aponte para o codigo de barras";
-            scanStatusBar.className = '';
-            console.log('Video iniciado, resolucao:', scannerVideo.videoWidth, 'x', scannerVideo.videoHeight);
+        // Configuracao do scanner
+        const config = {
+          fps: 15,
+          qrbox: { width: 280, height: 120 },
+          aspectRatio: 1.777778,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ]
+        };
 
-            // Iniciar deteccao continua
-            startScanning();
-          } catch (playErr) {
-            console.error('Erro ao iniciar reproducao:', playErr);
-            scanStatusText.textContent = "Erro ao iniciar video";
+        // Callback quando detectar codigo
+        const onScanSuccess = (decodedText, decodedResult) => {
+          const now = Date.now();
+          const codigoLimpo = decodedText.replace(/\D/g, '');
+
+          // Validar codigo
+          if (codigoLimpo.length < 8 || codigoLimpo.length > 14) {
+            console.log('Codigo invalido ignorado:', decodedText);
+            return;
+          }
+
+          // Evitar leituras duplicadas (1500ms de debounce)
+          if (decodedText === lastScannedCode && (now - lastScanTime) < 1500) {
+            return;
+          }
+
+          console.log('Codigo detectado:', decodedText, 'formato:', decodedResult.result.format.formatName);
+
+          lastScannedCode = decodedText;
+          lastScanTime = now;
+          scanCount++;
+          scanCountSpan.textContent = scanCount;
+
+          // Feedback visual
+          scanStatusText.textContent = "Codigo detectado!";
+          scanStatusBar.className = 'success';
+          lastScanResult.textContent = codigoLimpo;
+          lastScanResult.classList.add('visible');
+
+          // Feedback sonoro
+          playBeep();
+
+          // Vibrar
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+          }
+
+          // Atualizar input
+          input.value = codigoLimpo;
+          clearButton.classList.add('visible');
+
+          // Se modo continuo, continuar escaneando
+          if (!modoContinuoCheck.checked) {
+            setTimeout(() => {
+              fecharScanner();
+              buscar();
+            }, 500);
+          } else {
+            // No modo continuo, fazer busca em background
+            buscar();
+
+            // Resetar status apos 2s
+            setTimeout(() => {
+              if (isScanning) {
+                scanStatusText.textContent = "Pronto para proxima leitura";
+                scanStatusBar.className = '';
+              }
+            }, 2000);
           }
         };
 
-        // Fallback caso onloadedmetadata nao dispare
-        setTimeout(async () => {
-          if (!isScanning && scannerVideo.readyState >= 2) {
-            try {
-              await scannerVideo.play();
-              isScanning = true;
-              startScanning();
-            } catch (e) {
-              console.warn('Fallback play falhou:', e.message);
-            }
-          }
-        }, 1000);
+        const onScanError = (errorMessage) => {
+          // Ignorar erros de "nenhum codigo encontrado" - sao normais
+        };
+
+        // Iniciar scanner com camera traseira
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onScanSuccess,
+          onScanError
+        );
+
+        isScanning = true;
+        scanStatusText.textContent = "Aponte para o codigo de barras";
+        scanStatusBar.className = '';
+        console.log('Scanner iniciado com sucesso!');
 
       } catch (err) {
-        console.error('Erro ao iniciar video:', err);
-        alert('Erro ao iniciar camera: ' + err.message);
-        fecharScanner();
-      }
-    }
+        console.error('Erro ao iniciar scanner:', err);
 
-    // Canvas para processamento de imagem (melhora deteccao)
-    let scanCanvas = null;
-    let scanCtx = null;
-    let falhasConsecutivas = 0;
-
-    function startScanning() {
-      if (scanInterval) clearInterval(scanInterval);
-
-      // Criar canvas para melhor deteccao
-      if (!scanCanvas) {
-        scanCanvas = document.createElement('canvas');
-        scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
-      }
-
-      falhasConsecutivas = 0;
-      let ultimaDeteccao = 0;
-
-      // Funcao de deteccao
-      async function detectarBarcode() {
-        if (!isScanning || !barcodeDetector) {
-          if (isScanning) requestAnimationFrame(detectarBarcode);
-          return;
-        }
-
-        // Verificar se video esta pronto
-        if (scannerVideo.readyState < 2 || scannerVideo.videoWidth === 0) {
-          requestAnimationFrame(detectarBarcode);
-          return;
-        }
-
-        const agora = Date.now();
-
-        // Limitar para ~20fps
-        if (agora - ultimaDeteccao < 50) {
-          requestAnimationFrame(detectarBarcode);
-          return;
-        }
-        ultimaDeteccao = agora;
-
+        // Tentar com qualquer camera disponivel
         try {
-          // Atualizar tamanho do canvas se necessario
-          const vw = scannerVideo.videoWidth;
-          const vh = scannerVideo.videoHeight;
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            const cameraId = cameras[cameras.length - 1].id; // Ultima camera (geralmente traseira)
 
-          if (scanCanvas.width !== vw || scanCanvas.height !== vh) {
-            scanCanvas.width = vw;
-            scanCanvas.height = vh;
-            console.log('Canvas redimensionado para:', vw, 'x', vh);
-          }
+            await html5QrCode.start(
+              cameraId,
+              {
+                fps: 15,
+                qrbox: { width: 280, height: 120 }
+              },
+              (decodedText, decodedResult) => {
+                const now = Date.now();
+                const codigoLimpo = decodedText.replace(/\D/g, '');
 
-          // Desenhar frame atual no canvas
-          scanCtx.drawImage(scannerVideo, 0, 0, vw, vh);
+                if (codigoLimpo.length < 8 || codigoLimpo.length > 14) return;
+                if (decodedText === lastScannedCode && (now - lastScanTime) < 1500) return;
 
-          // Tentar detectar barcode - multiplas tentativas
-          let barcodes = [];
+                lastScannedCode = decodedText;
+                lastScanTime = now;
+                scanCount++;
+                scanCountSpan.textContent = scanCount;
 
-          // Tentar primeiro com canvas (mais confiavel com polyfill)
-          try {
-            barcodes = await barcodeDetector.detect(scanCanvas);
-          } catch (e1) {
-            // Se falhar com canvas, tentar diretamente do video
-            try {
-              barcodes = await barcodeDetector.detect(scannerVideo);
-            } catch (e2) {
-              // Tentar com ImageBitmap
-              try {
-                const bitmap = await createImageBitmap(scanCanvas);
-                barcodes = await barcodeDetector.detect(bitmap);
-                bitmap.close();
-              } catch (e3) {
-                // Ignorar erros
-              }
-            }
-          }
+                scanStatusText.textContent = "Codigo detectado!";
+                scanStatusBar.className = 'success';
+                lastScanResult.textContent = codigoLimpo;
+                lastScanResult.classList.add('visible');
 
-          if (barcodes.length > 0) {
-            const code = barcodes[0].rawValue;
-            const now = Date.now();
+                playBeep();
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-            // Validar codigo (deve ser numerico para EAN/UPC)
-            const codigoLimpo = code.replace(/\D/g, '');
-            if (codigoLimpo.length < 8 || codigoLimpo.length > 14) {
-              console.log('Codigo invalido ignorado:', code);
-              requestAnimationFrame(detectarBarcode);
-              return;
-            }
+                input.value = codigoLimpo;
+                clearButton.classList.add('visible');
 
-            // Evitar leituras duplicadas (1000ms de debounce)
-            if (code === lastScannedCode && (now - lastScanTime) < 1000) {
-              requestAnimationFrame(detectarBarcode);
-              return;
-            }
-
-            console.log('Codigo detectado:', code, 'formato:', barcodes[0].format);
-
-            lastScannedCode = code;
-            lastScanTime = now;
-            scanCount++;
-            scanCountSpan.textContent = scanCount;
-            falhasConsecutivas = 0;
-
-            // Feedback visual
-            scanStatusText.textContent = "Codigo detectado!";
-            scanStatusBar.className = 'success';
-            lastScanResult.textContent = codigoLimpo;
-            lastScanResult.classList.add('visible');
-
-            // Feedback sonoro
-            playBeep();
-
-            // Vibrar
-            if (navigator.vibrate) {
-              navigator.vibrate([100, 50, 100]);
-            }
-
-            // Atualizar input
-            input.value = codigoLimpo;
-            clearButton.classList.add('visible');
-
-            // Se modo continuo, continuar escaneando
-            // Se nao, fechar e buscar
-            if (!modoContinuoCheck.checked) {
-              setTimeout(() => {
-                fecharScanner();
-                buscar();
-              }, 500);
-              return; // Nao continuar escaneando
-            } else {
-              // No modo continuo, fazer busca em background
-              buscar();
-
-              // Resetar status apos 2s
-              setTimeout(() => {
-                if (isScanning) {
-                  scanStatusText.textContent = "Pronto para proxima leitura";
-                  scanStatusBar.className = '';
+                if (!modoContinuoCheck.checked) {
+                  setTimeout(() => {
+                    fecharScanner();
+                    buscar();
+                  }, 500);
+                } else {
+                  buscar();
+                  setTimeout(() => {
+                    if (isScanning) {
+                      scanStatusText.textContent = "Pronto para proxima leitura";
+                      scanStatusBar.className = '';
+                    }
+                  }, 2000);
                 }
-              }, 2000);
-            }
+              },
+              () => {}
+            );
+
+            isScanning = true;
+            scanStatusText.textContent = "Aponte para o codigo de barras";
+            console.log('Scanner iniciado com camera alternativa!');
           } else {
-            falhasConsecutivas++;
-
-            // Mostrar feedback se estiver demorando
-            if (falhasConsecutivas > 100 && falhasConsecutivas % 50 === 0) {
-              scanStatusText.textContent = "Aproxime o codigo de barras...";
-              scanStatusBar.className = 'reading';
-            }
+            throw new Error('Nenhuma camera disponivel');
           }
-        } catch (e) {
-          console.warn('Erro na deteccao:', e.message);
-        }
-
-        // Continuar escaneando
-        if (isScanning) {
-          requestAnimationFrame(detectarBarcode);
+        } catch (fallbackErr) {
+          console.error('Erro no fallback:', fallbackErr);
+          alert('Nao foi possivel acessar a camera. Verifique as permissoes do navegador.');
+          fecharScanner();
         }
       }
-
-      // Iniciar loop de deteccao com requestAnimationFrame (mais suave)
-      requestAnimationFrame(detectarBarcode);
     }
 
     function playBeep() {
@@ -1605,30 +1266,23 @@
       }
     });
 
-    function fecharScanner() {
+    async function fecharScanner() {
       console.log('Fechando scanner...');
       isScanning = false;
 
-      if (scanInterval) {
-        clearInterval(scanInterval);
-        scanInterval = null;
+      try {
+        if (html5QrCode && html5QrCode.isScanning) {
+          await html5QrCode.stop();
+          console.log('Scanner parado');
+        }
+      } catch (e) {
+        console.warn('Erro ao parar scanner:', e.message);
       }
 
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => {
-          track.stop();
-          console.log('Track parada:', track.kind);
-        });
-        mediaStream = null;
-      }
-
-      scannerVideo.srcObject = null;
-      scannerVideo.onloadedmetadata = null;
       scannerContainer.classList.remove('active');
       lastScanResult.classList.remove('visible');
       scanStatusText.textContent = "Aguardando camera...";
       scanStatusBar.className = '';
-      falhasConsecutivas = 0;
 
       console.log('Scanner fechado');
     }
