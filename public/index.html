@@ -348,6 +348,31 @@
       margin: 8px 0;
     }
 
+    /* Badge de fonte */
+    .fonte-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .fonte-badge.local {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .fonte-badge.online {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .fonte-badge.cache {
+      background: #fff3e0;
+      color: #ef6c00;
+    }
+
     #scanner-container {
       display: none;
       position: fixed;
@@ -779,14 +804,22 @@
 
     document.getElementById("buscar").onclick = buscar;
 
-    function mostrarProduto(produto, origem) {
+    function mostrarProduto(produto, origem, fonte) {
       let infoHTML = '';
       // Garantir que o código de barras está sempre disponível
       const codigo = produto['cod de barra'] || produto['cod. de barra'] || produto.codigo || input.value.replace(/\D/g, "");
 
+      // Badge de fonte
+      let fonteBadgeClass = 'local';
+      if (origem === 'online') fonteBadgeClass = 'online';
+      else if (origem === 'cache') fonteBadgeClass = 'cache';
+
+      const fonteTexto = fonte || (origem === 'local' ? 'Base Local' : origem === 'online' ? 'Online' : 'Cache');
+      const fonteBadge = `<span class="fonte-badge ${fonteBadgeClass}">${fonteTexto}</span>`;
+
       // Mostrar todas as informações do produto
       for (const [key, value] of Object.entries(produto)) {
-        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome' && key !== 'foto') {
+        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome' && key !== 'foto' && key !== 'fonte') {
           const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
           infoHTML += `<p><b>${label}:</b> ${value}</p>`;
         }
@@ -820,6 +853,7 @@
 
       resultado.innerHTML = `
         <div class="produto-card">
+          ${fonteBadge}
           ${imagemHTML}
           <h3>${produto.produto || produto.nome || 'Produto Encontrado'}</h3>
           <div class="produto-info">
@@ -878,7 +912,7 @@
         }
 
         console.log("✅ Produto encontrado! Origem:", data.origem);
-        mostrarProduto(data.produto, data.origem);
+        mostrarProduto(data.produto, data.origem, data.fonte);
       } catch (error) {
         console.error("❌ Erro na busca:", error);
         resultado.innerHTML = `
@@ -1386,9 +1420,9 @@
 
     // Sobrescrever função mostrarProduto para guardar produto atual
     const originalMostrarProduto = mostrarProduto;
-    mostrarProduto = function(produto, origem) {
+    mostrarProduto = function(produto, origem, fonte) {
       produtoAtual = produto;
-      originalMostrarProduto(produto, origem);
+      originalMostrarProduto(produto, origem, fonte);
       atualizarBotaoSalvar();
     };
 
