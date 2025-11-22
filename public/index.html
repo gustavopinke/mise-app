@@ -731,12 +731,12 @@
       margin-top: 2px;
     }
 
-    /* Modo continuo toggle */
+    /* Modo continuo toggle - posicionado acima da area de scan */
     .scanner-mode-toggle {
       position: absolute;
-      top: 70px;
+      top: 25%;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -100%);
       background: rgba(0, 0, 0, 0.7);
       padding: 8px 15px;
       border-radius: 20px;
@@ -942,7 +942,7 @@
     <button id="close-modal">X Fechar</button>
   </div>
 
-  <script src="https://unpkg.com/@AugustasCole/barcode-detector-polyfill@1.1.0/dist/umd/bundle.min.js"></script>
+  <script src="https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es2018.min.js"></script>
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
@@ -969,17 +969,29 @@
 
     // Inicializar BarcodeDetector
     async function initBarcodeDetector() {
-      if ('BarcodeDetector' in window) {
-        const formats = await BarcodeDetector.getSupportedFormats();
+      try {
+        // Usar o polyfill se BarcodeDetector nativo nao existir
+        const DetectorClass = window.BarcodeDetector || window.BarcodeDetectorPolyfill;
+
+        if (!DetectorClass) {
+          console.error('BarcodeDetector nao disponivel');
+          alert('Seu navegador nao suporta leitura de codigo de barras. Use Chrome ou Safari.');
+          return false;
+        }
+
+        const formats = await DetectorClass.getSupportedFormats();
         console.log('Formatos suportados:', formats);
-        barcodeDetector = new BarcodeDetector({
+
+        barcodeDetector = new DetectorClass({
           formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
         });
-      } else {
-        console.warn('BarcodeDetector nao suportado nativamente, usando polyfill');
-        barcodeDetector = new BarcodeDetector({
-          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
-        });
+
+        console.log('BarcodeDetector inicializado com sucesso');
+        return true;
+      } catch (e) {
+        console.error('Erro ao inicializar BarcodeDetector:', e);
+        alert('Erro ao inicializar leitor de codigo de barras: ' + e.message);
+        return false;
       }
     }
 
