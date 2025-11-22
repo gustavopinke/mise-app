@@ -516,20 +516,6 @@
       50% { opacity: 1; transform: scaleX(1); }
     }
 
-    /* Texto de instrucao */
-    #scan-instruction {
-      position: absolute;
-      bottom: 20%;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      color: white;
-      font-size: 14px;
-      font-weight: 500;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      padding: 10px;
-    }
-
     /* Status do scanner */
     #scan-status-bar {
       position: absolute;
@@ -924,8 +910,7 @@
       <!-- Ultimo codigo lido -->
       <div id="last-scan-result"></div>
 
-      <!-- Instrucao -->
-      <div id="scan-instruction">Posicione o codigo de barras dentro da area verde</div>
+      <!-- Instrucao (removida) -->
 
       <!-- Botao fechar -->
       <button id="close-scanner-btn">
@@ -1352,7 +1337,7 @@
           try {
             await scannerVideo.play();
             isScanning = true;
-            scanStatusText.textContent = "Camera pronta - aponte para o codigo";
+            scanStatusText.textContent = "Escaneando...";
             scanStatusBar.className = '';
             console.log('Video iniciado, resolucao:', scannerVideo.videoWidth, 'x', scannerVideo.videoHeight);
 
@@ -1388,6 +1373,7 @@
     let scanCanvas = null;
     let scanCtx = null;
     let falhasConsecutivas = 0;
+    let scanningActive = false;
 
     function startScanning() {
       if (scanInterval) clearInterval(scanInterval);
@@ -1399,13 +1385,17 @@
       }
 
       falhasConsecutivas = 0;
+      scanningActive = true;
 
-      // Intervalo mais rapido para melhor deteccao (15fps)
-      scanInterval = setInterval(async () => {
-        if (!isScanning || !barcodeDetector) return;
+      // Funcao de scan usando requestAnimationFrame para melhor performance
+      async function scanFrame() {
+        if (!scanningActive || !isScanning || !barcodeDetector) {
+          return;
+        }
 
         // Verificar se video esta pronto
         if (scannerVideo.readyState < 2 || scannerVideo.videoWidth === 0) {
+          requestAnimationFrame(scanFrame);
           return;
         }
 
@@ -1423,7 +1413,7 @@
           // Desenhar frame atual no canvas
           scanCtx.drawImage(scannerVideo, 0, 0, vw, vh);
 
-          // Tentar detectar barcode diretamente do video primeiro
+          // Tentar detectar diretamente do video (mais rapido)
           let barcodes = [];
           try {
             barcodes = await barcodeDetector.detect(scannerVideo);
@@ -1432,13 +1422,7 @@
             try {
               barcodes = await barcodeDetector.detect(scanCanvas);
             } catch (e2) {
-              // Tentar com ImageData (ultimo recurso)
-              try {
-                const imageData = scanCtx.getImageData(0, 0, vw, vh);
-                barcodes = await barcodeDetector.detect(imageData);
-              } catch (e3) {
-                // Ignorar
-              }
+              // Ignorar erro silenciosamente
             }
           }
 
@@ -1450,11 +1434,13 @@
             const codigoLimpo = code.replace(/\D/g, '');
             if (codigoLimpo.length < 8 || codigoLimpo.length > 14) {
               console.log('Codigo invalido ignorado:', code);
+              requestAnimationFrame(scanFrame);
               return;
             }
 
-            // Evitar leituras duplicadas (800ms de debounce)
-            if (code === lastScannedCode && (now - lastScanTime) < 800) {
+            // Evitar leituras duplicadas (1000ms de debounce)
+            if (code === lastScannedCode && (now - lastScanTime) < 1000) {
+              requestAnimationFrame(scanFrame);
               return;
             }
 
@@ -1487,10 +1473,12 @@
             // Se modo continuo, continuar escaneando
             // Se nao, fechar e buscar
             if (!modoContinuoCheck.checked) {
+              scanningActive = false;
               setTimeout(() => {
                 fecharScanner();
                 buscar();
               }, 500);
+              return;
             } else {
               // No modo continuo, fazer busca em background
               buscar();
@@ -1498,24 +1486,26 @@
               // Resetar status apos 2s
               setTimeout(() => {
                 if (isScanning) {
-                  scanStatusText.textContent = "Pronto para proxima leitura";
+                  scanStatusText.textContent = "Escaneando...";
                   scanStatusBar.className = '';
                 }
               }, 2000);
             }
           } else {
             falhasConsecutivas++;
-
-            // Mostrar feedback se estiver demorando
-            if (falhasConsecutivas > 50 && falhasConsecutivas % 30 === 0) {
-              scanStatusText.textContent = "Aproxime o codigo de barras...";
-              scanStatusBar.className = 'reading';
-            }
           }
         } catch (e) {
           console.warn('Erro na deteccao:', e.message);
         }
-      }, 66); // ~15fps para melhor deteccao
+
+        // Continuar escaneando
+        if (scanningActive && isScanning) {
+          requestAnimationFrame(scanFrame);
+        }
+      }
+
+      // Iniciar loop de scan
+      requestAnimationFrame(scanFrame);
     }
 
     function playBeep() {
@@ -1545,6 +1535,7 @@
     function fecharScanner() {
       console.log('Fechando scanner...');
       isScanning = false;
+      scanningActive = false;
 
       if (scanInterval) {
         clearInterval(scanInterval);
