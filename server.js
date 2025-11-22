@@ -801,7 +801,7 @@ app.get("/api/buscar-por-nome/:termo", async (req, res) => {
         SELECT codigo_barras, produto, marca, categoria
         FROM produtos
         WHERE produto LIKE ?
-        LIMIT 10
+        LIMIT 100
       `);
       resultadosLocais = stmt.all(`%${termo}%`).map(p => ({
         codigo: p.codigo_barras,
@@ -821,7 +821,7 @@ app.get("/api/buscar-por-nome/:termo", async (req, res) => {
     resultadosLocais = produtos.filter(p => {
       const nome = (p.produto || p.nome || "").toLowerCase();
       return nome.includes(termo);
-    }).slice(0, 10).map(p => ({
+    }).slice(0, 100).map(p => ({
       codigo: p["cod de barra"] || p.codigo || "",
       nome: p.produto || p.nome || "",
       marca: p.marca || "",
