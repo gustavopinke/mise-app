@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <title>MISE - Scanner</title>
 
@@ -197,7 +197,7 @@
       margin-left: 5px;
     }
 
-    /* Botão Salvar Inventário */
+    /* Botao Salvar Inventario */
     #salvar-inventario {
       background: #000000;
       color: white;
@@ -348,6 +348,35 @@
       margin: 8px 0;
     }
 
+    /* Badge de fonte */
+    .fonte-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .fonte-badge.local {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .fonte-badge.online {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .fonte-badge.cache {
+      background: #fff3e0;
+      color: #ef6c00;
+    }
+
+    /* ========================================
+       SCANNER PROFISSIONAL
+       ======================================== */
     #scanner-container {
       display: none;
       position: fixed;
@@ -355,7 +384,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.98);
+      background: #000;
       z-index: 1000;
       flex-direction: column;
       align-items: center;
@@ -366,91 +395,228 @@
       display: flex;
     }
 
-    #scanner-reader {
-      width: 100%;
-      max-width: 600px;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    #scanner-reader video {
-      border-radius: 12px;
-    }
-
-    .scan-status {
-      background: rgba(0, 0, 0, 0.8);
-      color: #66F7CC;
-      padding: 12px 25px;
-      border-radius: 25px;
-      font-size: 14px;
-      font-weight: 600;
-      white-space: nowrap;
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    #close-scanner {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 25px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 15px;
-      transition: background 0.2s;
-      width: auto;
-      box-shadow: none;
-    }
-
-    #close-scanner:hover {
-      background: #d32f2f;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* Rotação do scanner com orientação do dispositivo */
-    @media (orientation: landscape) {
-      #scanner-reader {
-        max-width: 80%;
-        max-height: 70vh;
+    /* Forcar orientacao horizontal no scanner */
+    @media screen and (orientation: portrait) {
+      #scanner-container.active {
+        transform: rotate(90deg);
+        transform-origin: center center;
+        width: 100vh;
+        height: 100vw;
+        position: fixed;
+        top: calc((100vh - 100vw) / 2);
+        left: calc((100vw - 100vh) / 2);
       }
     }
 
-    /* Customizar estilo do html5-qrcode */
-    #scanner-reader__scan_region {
-      background: transparent !important;
+    #scanner-video-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
-    #scanner-reader__dashboard_section_csr button {
-      background: #66F7CC !important;
-      color: #000 !important;
-      border: none !important;
-      padding: 10px 20px !important;
-      border-radius: 8px !important;
-      font-weight: 600 !important;
+    #scanner-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
-    #scanner-reader__dashboard_section_swaplink {
-      color: #66F7CC !important;
-      text-decoration: none !important;
+    /* Overlay com marcas de scanner */
+    #scanner-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* Esconder textos padrão da biblioteca */
-    #scanner-reader__header_message,
-    #scanner-reader__status_span {
-      display: none !important;
+    /* Area de leitura retangular com cantos verdes */
+    #scan-area {
+      position: relative;
+      width: 80%;
+      max-width: 400px;
+      height: 120px;
+      border: 2px solid rgba(102, 247, 204, 0.5);
+      border-radius: 8px;
+      background: transparent;
     }
 
-    #scanner-reader__scan_region > br,
-    #scanner-reader__scan_region > img {
-      display: none !important;
+    /* Cantos verdes do scanner */
+    .scan-corner {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: #66F7CC;
+      border-style: solid;
+      border-width: 0;
     }
 
-    /* Estilo da área de leitura */
-    #qr-shaded-region {
-      border-color: #66F7CC !important;
+    .scan-corner.top-left {
+      top: -2px;
+      left: -2px;
+      border-top-width: 4px;
+      border-left-width: 4px;
+      border-top-left-radius: 8px;
+    }
+
+    .scan-corner.top-right {
+      top: -2px;
+      right: -2px;
+      border-top-width: 4px;
+      border-right-width: 4px;
+      border-top-right-radius: 8px;
+    }
+
+    .scan-corner.bottom-left {
+      bottom: -2px;
+      left: -2px;
+      border-bottom-width: 4px;
+      border-left-width: 4px;
+      border-bottom-left-radius: 8px;
+    }
+
+    .scan-corner.bottom-right {
+      bottom: -2px;
+      right: -2px;
+      border-bottom-width: 4px;
+      border-right-width: 4px;
+      border-bottom-right-radius: 8px;
+    }
+
+    /* Linha de scan animada */
+    #scan-line {
+      position: absolute;
+      top: 50%;
+      left: 5%;
+      width: 90%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #66F7CC, transparent);
+      animation: scan-pulse 1.5s ease-in-out infinite;
+      box-shadow: 0 0 10px #66F7CC, 0 0 20px #66F7CC;
+    }
+
+    @keyframes scan-pulse {
+      0%, 100% { opacity: 0.4; transform: scaleX(0.8); }
+      50% { opacity: 1; transform: scaleX(1); }
+    }
+
+    /* Texto de instrucao */
+    #scan-instruction {
+      position: absolute;
+      bottom: 20%;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      padding: 10px;
+    }
+
+    /* Status do scanner */
+    #scan-status-bar {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: #66F7CC;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    #scan-status-bar.success {
+      background: rgba(76, 175, 80, 0.9);
+      color: white;
+    }
+
+    #scan-status-bar.reading {
+      background: rgba(255, 152, 0, 0.9);
+      color: white;
+    }
+
+    /* Botao fechar */
+    #close-scanner-btn {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(244, 67, 54, 0.9);
+      color: white;
+      border: none;
+      padding: 12px 40px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      width: auto;
+      margin: 0;
+    }
+
+    #close-scanner-btn:hover {
+      background: rgba(211, 47, 47, 1);
+      transform: translateX(-50%) scale(1.05);
+    }
+
+    /* Ultimo codigo lido */
+    #last-scan-result {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #66F7CC;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: monospace;
+      letter-spacing: 2px;
+      display: none;
+      z-index: 10;
+    }
+
+    #last-scan-result.visible {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* Contador de leituras */
+    #scan-counter {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 10;
     }
 
     .produto-imagem {
@@ -558,8 +724,37 @@
       margin-top: 2px;
     }
 
+    /* Modo continuo toggle */
+    .scanner-mode-toggle {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 15px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .scanner-mode-toggle label {
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scanner-mode-toggle input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
   </style>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 
 <body>
@@ -573,18 +768,18 @@
         <p class="header-slogan">Prepare-se para o sucesso</p>
       </div>
 
-      <p class="scanner-title">Scanner de Códigos de Barras</p>
+      <p class="scanner-title">Scanner de Codigos de Barras</p>
 
-      <!-- INPUT CÓDIGO DE BARRAS -->
+      <!-- INPUT CODIGO DE BARRAS -->
       <div class="input-wrapper">
         <input
             id="codigo"
             type="text"
-            placeholder="Digite ou escaneie o código"
+            placeholder="Digite ou escaneie o codigo"
             inputmode="numeric"
             pattern="[0-9]*"
         />
-        <button class="clear-button" id="clear-button">✕</button>
+        <button class="clear-button" id="clear-button">X</button>
       </div>
 
       <!-- BUSCA POR NOME -->
@@ -596,7 +791,7 @@
               type="text"
               placeholder="Digite o nome do produto..."
           />
-          <button class="clear-button" id="clear-busca-nome">✕</button>
+          <button class="clear-button" id="clear-busca-nome">X</button>
         </div>
         <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
       </div>
@@ -615,7 +810,7 @@
         </label>
       </div>
 
-      <!-- CAMPO DE PESO (visível quando toggle ativo) -->
+      <!-- CAMPO DE PESO (visivel quando toggle ativo) -->
       <div class="peso-container" id="peso-container">
         <label class="field-label">Peso (kg)</label>
         <div class="peso-wrapper">
@@ -627,13 +822,13 @@
                 inputmode="decimal"
             />
           </div>
-          <button class="bluetooth-btn" id="conectar-balanca" title="Conectar Balança Bluetooth">
+          <button class="bluetooth-btn" id="conectar-balanca" title="Conectar Balanca Bluetooth">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>
             </svg>
           </button>
         </div>
-        <p id="bluetooth-status" style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Digite o peso ou clique no ícone para conectar a balança</p>
+        <p id="bluetooth-status" style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Digite o peso ou clique no icone para conectar a balanca</p>
       </div>
 
       <!-- CAMPO DE QUANTIDADE -->
@@ -666,46 +861,120 @@
         Scanner
       </button>
 
-      <!-- BOTÃO SALVAR INVENTÁRIO -->
+      <!-- BOTAO SALVAR INVENTARIO -->
       <button id="salvar-inventario" disabled>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
           <polyline points="17,21 17,13 7,13 7,21"/>
           <polyline points="7,3 7,8 15,8"/>
         </svg>
-        Salvar no Inventário
+        Salvar no Inventario
       </button>
 
       <div id="resultado"></div>
     </div>
   </div>
 
-  <!-- CONTAINER DO SCANNER -->
+  <!-- CONTAINER DO SCANNER PROFISSIONAL -->
   <div id="scanner-container">
-    <div id="scanner-reader"></div>
-    <div class="scan-status" id="scan-status">Posicione o código de barras na área de leitura</div>
-    <button id="close-scanner">Fechar Câmera</button>
+    <!-- Video da camera -->
+    <div id="scanner-video-wrapper">
+      <video id="scanner-video" autoplay playsinline></video>
+
+      <!-- Overlay com marcas -->
+      <div id="scanner-overlay">
+        <div id="scan-area">
+          <div class="scan-corner top-left"></div>
+          <div class="scan-corner top-right"></div>
+          <div class="scan-corner bottom-left"></div>
+          <div class="scan-corner bottom-right"></div>
+          <div id="scan-line"></div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="scan-status-bar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        <span id="scan-status-text">Aguardando camera...</span>
+      </div>
+
+      <!-- Contador -->
+      <div id="scan-counter">Leituras: <span id="scan-count">0</span></div>
+
+      <!-- Toggle modo continuo -->
+      <div class="scanner-mode-toggle">
+        <label>
+          <input type="checkbox" id="modo-continuo" checked>
+          Modo continuo (camera sempre aberta)
+        </label>
+      </div>
+
+      <!-- Ultimo codigo lido -->
+      <div id="last-scan-result"></div>
+
+      <!-- Instrucao -->
+      <div id="scan-instruction">Posicione o codigo de barras dentro da area verde</div>
+
+      <!-- Botao fechar -->
+      <button id="close-scanner-btn">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Fechar Camera
+      </button>
+    </div>
   </div>
 
   <!-- MODAL PARA FOTO EM TAMANHO GRANDE -->
   <div id="image-modal">
     <img id="modal-image" src="" alt="Produto">
-    <button id="close-modal">✕ Fechar</button>
+    <button id="close-modal">X Fechar</button>
   </div>
 
+  <script src="https://unpkg.com/@AugustasCole/barcode-detector-polyfill@1.1.0/dist/umd/bundle.min.js"></script>
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
     const scannerContainer = document.getElementById("scanner-container");
-    const scannerReader = document.getElementById("scanner-reader");
+    const scannerVideo = document.getElementById("scanner-video");
     const imageModal = document.getElementById("image-modal");
     const modalImage = document.getElementById("modal-image");
-    const scanStatus = document.getElementById("scan-status");
+    const scanStatusText = document.getElementById("scan-status-text");
+    const scanStatusBar = document.getElementById("scan-status-bar");
+    const lastScanResult = document.getElementById("last-scan-result");
+    const scanCountSpan = document.getElementById("scan-count");
+    const modoContinuoCheck = document.getElementById("modo-continuo");
     const clearButton = document.getElementById("clear-button");
-    let html5QrCode = null;
+
+    let mediaStream = null;
+    let barcodeDetector = null;
+    let scanInterval = null;
     let isScanning = false;
     let ultimaBusca = "";
     let buscaTimeout = null;
+    let scanCount = 0;
+    let lastScannedCode = "";
+    let lastScanTime = 0;
+
+    // Inicializar BarcodeDetector
+    async function initBarcodeDetector() {
+      if ('BarcodeDetector' in window) {
+        const formats = await BarcodeDetector.getSupportedFormats();
+        console.log('Formatos suportados:', formats);
+        barcodeDetector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
+        });
+      } else {
+        console.warn('BarcodeDetector nao suportado nativamente, usando polyfill');
+        barcodeDetector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
+        });
+      }
+    }
 
     // LIMPAR INPUT AO CLICAR NELE
     input.addEventListener('click', () => {
@@ -715,7 +984,7 @@
       ultimaBusca = '';
     });
 
-    // MOSTRAR/ESCONDER BOTÃO X
+    // MOSTRAR/ESCONDER BOTAO X
     input.addEventListener('input', () => {
       if (input.value.length > 0) {
         clearButton.classList.add('visible');
@@ -760,70 +1029,66 @@
       }
     });
 
-    // Auto-busca quando digitar código completo (debounce)
+    // Auto-busca quando digitar codigo completo (debounce)
     input.addEventListener("input", (e) => {
       const codigo = e.target.value.replace(/\D/g, "");
 
       if (buscaTimeout) clearTimeout(buscaTimeout);
 
-      // Auto-busca se tiver 8+ dígitos (código de barras comum)
       if (codigo.length >= 8 && codigo.length <= 14) {
         buscaTimeout = setTimeout(() => {
-          // Só buscar se o código for diferente do último buscado
           if (codigo !== ultimaBusca) {
             buscar();
           }
-        }, 500); // Reduzido de 800ms para 500ms para busca mais rápida
+        }, 500);
       }
     });
 
     document.getElementById("buscar").onclick = buscar;
 
-    function mostrarProduto(produto, origem) {
+    function mostrarProduto(produto, origem, fonte) {
       let infoHTML = '';
-      // Garantir que o código de barras está sempre disponível
       const codigo = produto['cod de barra'] || produto['cod. de barra'] || produto.codigo || input.value.replace(/\D/g, "");
 
-      // Mostrar todas as informações do produto
+      // Mostrar todas as informacoes do produto
       for (const [key, value] of Object.entries(produto)) {
-        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome' && key !== 'foto') {
+        if (value && key !== 'cod de barra' && key !== 'cod. de barra' && key !== 'codigo' && key !== 'produto' && key !== 'nome' && key !== 'foto' && key !== 'fonte') {
           const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
           infoHTML += `<p><b>${label}:</b> ${value}</p>`;
         }
       }
 
+      // Badge de fonte
+      let fonteBadgeClass = 'local';
+      if (origem === 'online') fonteBadgeClass = 'online';
+      else if (origem === 'cache') fonteBadgeClass = 'cache';
+
+      let fonteBadge = `<span class="fonte-badge ${fonteBadgeClass}">${fonte || origem}</span>`;
+
       // Adicionar imagem se existir
       let imagemHTML = '';
       if (produto.foto) {
-        console.log('📸 Foto do produto:', produto.foto);
-        console.log('📸 Tipo da foto:', typeof produto.foto);
-        // produto.foto pode ser um objeto {fonte, url, filename} ou uma string
         let fotoUrl = '';
         if (typeof produto.foto === 'object' && produto.foto.url) {
           fotoUrl = produto.foto.url;
-          console.log('📸 URL da foto (objeto):', fotoUrl);
         } else if (typeof produto.foto === 'string') {
           fotoUrl = `/fotos/${produto.foto}`;
-          console.log('📸 URL da foto (string):', fotoUrl);
         }
 
         if (fotoUrl) {
-          // Escapar aspas no nome do produto para não quebrar o HTML
           const altText = (produto.produto || produto.nome || 'Produto').replace(/"/g, '&quot;');
           const fotoUrlEscaped = fotoUrl.replace(/'/g, "\\'");
-          imagemHTML = `<img src="${fotoUrl}" class="produto-imagem" alt="${altText}" onclick="abrirImagemModal('${fotoUrlEscaped}')" onerror="console.error('Erro ao carregar foto:', this.src); this.style.display='none';">`;
-          console.log('📸 Imagem HTML gerado com sucesso');
+          imagemHTML = `<img src="${fotoUrl}" class="produto-imagem" alt="${altText}" onclick="abrirImagemModal('${fotoUrlEscaped}')" onerror="this.style.display='none';">`;
         }
-      } else {
-        console.log('⚠️ Nenhuma foto disponível para o produto');
       }
 
       resultado.innerHTML = `
         <div class="produto-card">
           ${imagemHTML}
           <h3>${produto.produto || produto.nome || 'Produto Encontrado'}</h3>
+          ${fonteBadge}
           <div class="produto-info">
-            <p><b>Código de Barras:</b> ${codigo}</p>
+            <p><b>Codigo de Barras:</b> ${codigo}</p>
             ${infoHTML}
           </div>
         </div>
@@ -834,18 +1099,16 @@
       const codigo = input.value.replace(/\D/g, "");
 
       if (!codigo) {
-        resultado.innerHTML = "<p style='color: #999; margin-top: 20px;'>Digite um código válido.</p>";
+        resultado.innerHTML = "<p style='color: #999; margin-top: 20px;'>Digite um codigo valido.</p>";
         ultimaBusca = "";
         return;
       }
 
-      // Evitar buscas duplicadas do mesmo código
       if (codigo === ultimaBusca) {
-        console.log("⚠️ Código já buscado, ignorando busca duplicada");
+        console.log("Codigo ja buscado, ignorando busca duplicada");
         return;
       }
 
-      // Atualizar ultimaBusca ANTES da busca para evitar duplicatas em requisições rápidas
       ultimaBusca = codigo;
       resultado.innerHTML = `<p style='margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;'>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="animation: pulse 1s ease-in-out infinite;">
@@ -859,208 +1122,212 @@
       </style>`;
 
       try {
-        console.log("🔍 Iniciando busca para código:", codigo);
         const resp = await fetch(`/consulta/${codigo}`);
         const data = await resp.json();
-
-        console.log("📦 Resposta recebida:", data);
-        console.log("📦 Produto:", data.produto);
-        console.log("📦 Foto no produto:", data.produto?.foto);
 
         if (!data.ok) {
           resultado.innerHTML = `
             <div style="margin-top: 20px; padding: 15px; background: #ffebee; border-radius: 10px; color: #c62828;">
-              <strong>❌ Produto não encontrado</strong>
-              <p style="margin: 5px 0 0 0; font-size: 14px;">Código: ${codigo}</p>
+              <strong>Produto nao encontrado</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">Codigo: ${codigo}</p>
             </div>
           `;
           return;
         }
 
-        console.log("✅ Produto encontrado! Origem:", data.origem);
-        mostrarProduto(data.produto, data.origem);
+        mostrarProduto(data.produto, data.origem, data.fonte);
       } catch (error) {
-        console.error("❌ Erro na busca:", error);
+        console.error("Erro na busca:", error);
         resultado.innerHTML = `
           <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; color: #e65100;">
-            <strong>⚠️ Erro de conexão</strong>
+            <strong>Erro de conexao</strong>
             <p style="margin: 5px 0 0 0; font-size: 14px;">Verifique sua internet e tente novamente.</p>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">${error.message}</p>
           </div>
         `;
-        // Resetar ultimaBusca em caso de erro para permitir nova tentativa
         ultimaBusca = "";
       }
     }
 
-    // SCANNER DE CÂMERA - Usando html5-qrcode (solução profissional)
+    // ========================================
+    // SCANNER PROFISSIONAL
+    // ========================================
     document.getElementById("scanner").onclick = async () => {
+      await abrirScanner();
+    };
+
+    async function abrirScanner() {
       try {
         scannerContainer.classList.add('active');
-        scanStatus.textContent = "Iniciando câmera...";
-        scanStatus.style.background = "rgba(0, 0, 0, 0.8)";
+        scanStatusText.textContent = "Iniciando camera...";
+        scanStatusBar.className = '';
+        scanCount = 0;
+        scanCountSpan.textContent = '0';
 
-        // Criar instância do scanner se não existir
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("scanner-reader");
+        // Inicializar detector de codigo de barras
+        if (!barcodeDetector) {
+          await initBarcodeDetector();
         }
 
-        // Configuração otimizada para leitura rápida de códigos de barras
-        const config = {
-          fps: 15, // Frames por segundo para detecção
-          qrbox: { width: 300, height: 150 }, // Área de leitura retangular (ideal para códigos de barras)
-          aspectRatio: 1.777778, // 16:9
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.ITF,
-            Html5QrcodeSupportedFormats.QR_CODE
-          ],
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true // Usa API nativa quando disponível (mais rápido)
+        // Configuracoes da camera - preferir traseira com alta resolucao
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            focusMode: { ideal: 'continuous' },
+            zoom: { ideal: 1.5 }
           }
         };
 
-        // Callback quando código é detectado
-        const onScanSuccess = (decodedText, decodedResult) => {
-          console.log(`✅ Código detectado: ${decodedText}`);
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        scannerVideo.srcObject = mediaStream;
 
-          // Vibrar dispositivo
-          if (navigator.vibrate) {
-            navigator.vibrate([100, 50, 100]);
-          }
+        // Aplicar configuracoes avancadas
+        const track = mediaStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
 
-          // Som de sucesso
-          try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            oscillator.frequency.value = 1200;
-            oscillator.type = 'sine';
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.15);
-          } catch (e) {}
-
-          input.value = decodedText;
-          clearButton.classList.add('visible');
-          scanStatus.textContent = "✓ Código detectado!";
-          scanStatus.style.background = "rgba(76, 175, 80, 0.9)";
-
-          // Fechar scanner e buscar
-          setTimeout(() => {
-            fecharScanner();
-            buscar();
-          }, 400);
-        };
-
-        // Callback de erro (ignorar erros de leitura normais)
-        const onScanError = (errorMessage) => {
-          // Erros normais de frames sem código - ignorar silenciosamente
-        };
-
-        // Obter câmera traseira (preferencial) com alta resolução
-        const cameras = await Html5Qrcode.getCameras();
-
-        if (!cameras || cameras.length === 0) {
-          throw new Error('Nenhuma câmera encontrada');
+        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+          await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
         }
 
-        // Preferir câmera traseira
-        let cameraId = cameras[0].id;
-        for (const camera of cameras) {
-          const label = camera.label.toLowerCase();
-          if (label.includes('back') || label.includes('traseira') || label.includes('rear') || label.includes('environment')) {
-            cameraId = camera.id;
-            break;
-          }
+        if (capabilities.zoom && capabilities.zoom.max > 1) {
+          const optimalZoom = Math.min(1.5, capabilities.zoom.max);
+          await track.applyConstraints({ advanced: [{ zoom: optimalZoom }] });
         }
 
-        // Iniciar scanner
-        await html5QrCode.start(
-          cameraId,
-          config,
-          onScanSuccess,
-          onScanError
-        );
-
+        await scannerVideo.play();
         isScanning = true;
-        scanStatus.textContent = "Posicione o código de barras na área de leitura";
 
-        // Tentar aplicar zoom e foco contínuo (se disponível)
-        try {
-          const videoElement = document.querySelector('#scanner-reader video');
-          if (videoElement && videoElement.srcObject) {
-            const track = videoElement.srcObject.getVideoTracks()[0];
-            const capabilities = track.getCapabilities();
+        scanStatusText.textContent = "Camera pronta - aponte para o codigo";
+        scanStatusBar.className = '';
 
-            const advancedConstraints = [];
-
-            // Aplicar foco contínuo
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              advancedConstraints.push({ focusMode: 'continuous' });
-            }
-
-            // Aplicar zoom leve para melhor leitura (se disponível)
-            if (capabilities.zoom && capabilities.zoom.max > 1) {
-              const optimalZoom = Math.min(1.5, capabilities.zoom.max);
-              advancedConstraints.push({ zoom: optimalZoom });
-            }
-
-            if (advancedConstraints.length > 0) {
-              await track.applyConstraints({ advanced: advancedConstraints });
-              console.log('📷 Configurações de câmera aplicadas:', advancedConstraints);
-            }
-          }
-        } catch (e) {
-          console.log('⚠️ Não foi possível aplicar configurações avançadas de câmera');
-        }
+        // Iniciar deteccao continua
+        startScanning();
 
       } catch (err) {
-        console.error('❌ Erro ao acessar câmera:', err);
+        console.error('Erro ao acessar camera:', err);
 
-        let mensagem = 'Não foi possível acessar a câmera.';
+        let mensagem = 'Nao foi possivel acessar a camera.';
         if (err.name === 'NotAllowedError') {
-          mensagem = 'Permissão de câmera negada. Permita o acesso nas configurações do navegador.';
-        } else if (err.name === 'NotFoundError' || err.message.includes('Nenhuma câmera')) {
-          mensagem = 'Nenhuma câmera encontrada no dispositivo.';
-        } else if (err.name === 'NotReadableError') {
-          mensagem = 'Câmera em uso por outro aplicativo.';
+          mensagem = 'Permissao de camera negada.';
+        } else if (err.name === 'NotFoundError') {
+          mensagem = 'Nenhuma camera encontrada.';
         }
 
         alert(mensagem);
         fecharScanner();
       }
-    };
+    }
 
-    document.getElementById("close-scanner").onclick = fecharScanner;
+    function startScanning() {
+      if (scanInterval) clearInterval(scanInterval);
 
-    // Fechar scanner ao pressionar ESC
+      scanInterval = setInterval(async () => {
+        if (!isScanning || !barcodeDetector || scannerVideo.readyState !== 4) return;
+
+        try {
+          const barcodes = await barcodeDetector.detect(scannerVideo);
+
+          if (barcodes.length > 0) {
+            const code = barcodes[0].rawValue;
+            const now = Date.now();
+
+            // Evitar leituras duplicadas muito rapidas (500ms)
+            if (code === lastScannedCode && (now - lastScanTime) < 500) {
+              return;
+            }
+
+            lastScannedCode = code;
+            lastScanTime = now;
+            scanCount++;
+            scanCountSpan.textContent = scanCount;
+
+            // Feedback visual
+            scanStatusText.textContent = "Codigo detectado!";
+            scanStatusBar.className = 'success';
+            lastScanResult.textContent = code;
+            lastScanResult.classList.add('visible');
+
+            // Feedback sonoro
+            playBeep();
+
+            // Vibrar
+            if (navigator.vibrate) {
+              navigator.vibrate([100, 50, 100]);
+            }
+
+            // Atualizar input
+            input.value = code;
+            clearButton.classList.add('visible');
+
+            // Se modo continuo, continuar escaneando
+            // Se nao, fechar e buscar
+            if (!modoContinuoCheck.checked) {
+              setTimeout(() => {
+                fecharScanner();
+                buscar();
+              }, 400);
+            } else {
+              // No modo continuo, fazer busca em background
+              buscar();
+
+              // Resetar status apos 1.5s
+              setTimeout(() => {
+                if (isScanning) {
+                  scanStatusText.textContent = "Pronto para proxima leitura";
+                  scanStatusBar.className = '';
+                }
+              }, 1500);
+            }
+          }
+        } catch (e) {
+          // Ignorar erros de deteccao
+        }
+      }, 100); // Verificar a cada 100ms (10fps de deteccao)
+    }
+
+    function playBeep() {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 1200;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    document.getElementById("close-scanner-btn").onclick = fecharScanner;
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && scannerContainer.classList.contains('active')) {
         fecharScanner();
       }
     });
 
-    async function fecharScanner() {
-      if (html5QrCode && isScanning) {
-        try {
-          await html5QrCode.stop();
-        } catch (e) {
-          console.log('Erro ao parar scanner:', e);
-        }
-        isScanning = false;
+    function fecharScanner() {
+      isScanning = false;
+
+      if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
       }
+
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+
+      scannerVideo.srcObject = null;
       scannerContainer.classList.remove('active');
-      scanStatus.textContent = "Posicione o código de barras na área de leitura";
-      scanStatus.style.background = "rgba(0, 0, 0, 0.8)";
+      lastScanResult.classList.remove('visible');
+      scanStatusText.textContent = "Aguardando camera...";
+      scanStatusBar.className = '';
     }
 
     // ========================================
@@ -1078,19 +1345,16 @@
     let bluetoothCharacteristic = null;
     let produtoAtual = null;
 
-    // Toggle mostrar/esconder campo de peso
     togglePesagem.addEventListener('change', () => {
       if (togglePesagem.checked) {
         pesoContainer.classList.add('visible');
       } else {
         pesoContainer.classList.remove('visible');
-        // Desconectar balança se estiver conectada
         if (bluetoothDevice && bluetoothDevice.gatt.connected) {
           bluetoothDevice.gatt.disconnect();
         }
         pesoInput.value = '';
         ultimoPesoRecebido = 0;
-        // Resetar variáveis de estabilização (serão definidas depois)
       }
     });
 
@@ -1099,28 +1363,25 @@
     let ultimoPesoRecebido = 0;
     let ultimaAtualizacaoStatus = 0;
 
-    // Conectar Balança Bluetooth (Electrolux Kitchen Scale GKS.1136 BT)
     conectarBalancaBtn.addEventListener('click', async () => {
       try {
-        // Verificar se Bluetooth está disponível no navegador
         if (typeof navigator === 'undefined' || !navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
-          bluetoothStatus.innerHTML = '<strong>Bluetooth não suportado</strong><br><small>Web Bluetooth só funciona em:<br>• Chrome no Android<br>• Chrome/Edge no computador<br><br>NÃO funciona em Safari ou iOS.</small>';
+          bluetoothStatus.innerHTML = '<strong>Bluetooth nao suportado</strong><br><small>Web Bluetooth so funciona em Chrome no Android ou Chrome/Edge no computador.</small>';
           bluetoothStatus.style.color = '#f44336';
           return;
         }
 
-        bluetoothStatus.textContent = 'Procurando balança... Selecione na lista que aparecer.';
+        bluetoothStatus.textContent = 'Procurando balanca...';
         bluetoothStatus.style.color = '#666';
 
-        // Serviços comuns de balanças
         const knownServices = [
-          '0000181d-0000-1000-8000-00805f9b34fb', // Weight Scale Service
-          '0000181b-0000-1000-8000-00805f9b34fb', // Body Composition Service
-          '0000fff0-0000-1000-8000-00805f9b34fb', // Custom Service (comum em balanças chinesas)
-          '0000ffe0-0000-1000-8000-00805f9b34fb', // Custom Service 2
-          '0000fee7-0000-1000-8000-00805f9b34fb', // Tencent service
-          '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
-          '00001801-0000-1000-8000-00805f9b34fb', // Generic Attribute
+          '0000181d-0000-1000-8000-00805f9b34fb',
+          '0000181b-0000-1000-8000-00805f9b34fb',
+          '0000fff0-0000-1000-8000-00805f9b34fb',
+          '0000ffe0-0000-1000-8000-00805f9b34fb',
+          '0000fee7-0000-1000-8000-00805f9b34fb',
+          '00001800-0000-1000-8000-00805f9b34fb',
+          '00001801-0000-1000-8000-00805f9b34fb',
           'battery_service'
         ];
 
@@ -1132,65 +1393,45 @@
         bluetoothStatus.textContent = 'Conectando...';
         const server = await bluetoothDevice.gatt.connect();
 
-        // Obter todos os serviços disponíveis
         const services = await server.getPrimaryServices();
-        console.log('🔧 Serviços encontrados:', services.length);
-
         allCharacteristics = [];
 
-        // Explorar todos os serviços e características
         for (const service of services) {
-          console.log('📦 Serviço:', service.uuid);
           try {
             const chars = await service.getCharacteristics();
             for (const char of chars) {
-              console.log('  📋 Característica:', char.uuid, '| Propriedades:',
-                Object.keys(char.properties).filter(k => char.properties[k]).join(', '));
               allCharacteristics.push(char);
-
-              // Inscrever em todas as características que suportam notify/indicate
               if (char.properties.notify || char.properties.indicate) {
                 try {
                   if (char.properties.notify) {
                     await char.startNotifications();
                   }
                   char.addEventListener('characteristicvaluechanged', handleWeightData);
-                  console.log('  ✅ Inscrito em notificações');
-                } catch (e) {
-                  console.log('  ⚠️ Não foi possível inscrever:', e.message);
-                }
+                } catch (e) {}
               }
             }
-          } catch (e) {
-            console.log('  ⚠️ Erro ao ler características:', e.message);
-          }
+          } catch (e) {}
         }
 
-        // Também fazer polling (leitura periódica) para balanças que não enviam notificações
         if (pollingInterval) clearInterval(pollingInterval);
         pollingInterval = setInterval(async () => {
           for (const char of allCharacteristics) {
             if (char.properties.read) {
               try {
                 const value = await char.readValue();
-                // Simular evento de mudança
                 handleWeightData({ target: { value } });
-              } catch (e) {
-                // Ignorar erros de leitura
-              }
+              } catch (e) {}
             }
           }
-        }, 500); // Ler a cada 500ms
+        }, 500);
 
-        // Atualizar UI
         conectarBalancaBtn.classList.add('connected');
-        bluetoothStatus.textContent = 'Balança conectada! Coloque o produto na balança...';
+        bluetoothStatus.textContent = 'Balanca conectada!';
         bluetoothStatus.style.color = '#4CAF50';
 
-        // Monitorar desconexão
         bluetoothDevice.addEventListener('gattserverdisconnected', () => {
           conectarBalancaBtn.classList.remove('connected');
-          bluetoothStatus.textContent = 'Balança desconectada. Clique para reconectar.';
+          bluetoothStatus.textContent = 'Balanca desconectada.';
           bluetoothStatus.style.color = '#f44336';
           pesoInput.value = '';
           ultimoPesoRecebido = 0;
@@ -1205,52 +1446,27 @@
 
       } catch (error) {
         console.error('Erro Bluetooth:', error);
-
-        let mensagem = 'Erro ao conectar à balança.';
-        if (error.name === 'NotFoundError') {
-          mensagem = 'Nenhuma balança encontrada. Certifique-se que está ligada e pareada no Bluetooth do celular.';
-        } else if (error.name === 'SecurityError') {
-          mensagem = 'Permissão Bluetooth negada. Verifique as configurações do navegador.';
-        } else if (error.name === 'NotSupportedError') {
-          mensagem = 'Bluetooth não suportado neste navegador. Use Chrome no Android.';
-        } else if (error.name === 'TypeError' && error.message.includes('bluetooth')) {
-          mensagem = 'Bluetooth não disponível. Use Chrome/Edge no Android ou computador.';
-        } else if (error.message && error.message.includes('User cancelled')) {
-          mensagem = 'Seleção cancelada. Clique novamente para conectar.';
-          bluetoothStatus.style.color = '#666';
-          return;
-        } else if (error.message) {
-          mensagem = error.message;
-        }
-
-        bluetoothStatus.innerHTML = mensagem + '<br><small>Dica: Pareie a balança primeiro nas Configurações Bluetooth do celular.</small>';
+        bluetoothStatus.textContent = 'Erro ao conectar.';
         bluetoothStatus.style.color = '#f44336';
       }
     });
 
-    // Variáveis para estabilização do peso
     let pesoEstavel = 0;
     let tempoInicioEstabilizacao = 0;
     let pesoConfirmado = false;
     let ultimoPesoConfirmado = 0;
-    const TEMPO_ESTABILIZACAO = 2000; // 2 segundos
-    const TOLERANCIA_PESO = 0.005; // 5 gramas de tolerância
-    const TOLERANCIA_MUDANCA = 0.010; // 10 gramas para detectar mudança após confirmação
-    const PESO_MAXIMO = 10; // 10kg máximo (balança de cozinha)
+    const TEMPO_ESTABILIZACAO = 2000;
+    const TOLERANCIA_PESO = 0.005;
+    const TOLERANCIA_MUDANCA = 0.010;
+    const PESO_MAXIMO = 10;
 
-    // Processar dados de peso da balança
     function handleWeightData(event) {
       const value = event.target.value;
       const data = new Uint8Array(value.buffer);
 
-      // Debug apenas no console
-      const hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
-      console.log('📊 Dados da balança:', hexString);
-
       let peso = 0;
       let pesoEncontrado = false;
 
-      // Método 1: Peso direto em gramas (2 bytes, little-endian) - mais comum
       if (data.length >= 2 && !pesoEncontrado) {
         const pesoGramas = (data[1] << 8) | data[0];
         if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
@@ -1259,7 +1475,6 @@
         }
       }
 
-      // Método 2: Peso com flag no primeiro byte
       if (data.length >= 3 && !pesoEncontrado) {
         const pesoGramas = (data[2] << 8) | data[1];
         if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
@@ -1268,7 +1483,6 @@
         }
       }
 
-      // Método 3: Big-endian
       if (data.length >= 2 && !pesoEncontrado) {
         const pesoGramas = (data[0] << 8) | data[1];
         if (pesoGramas > 0 && pesoGramas <= PESO_MAXIMO * 1000) {
@@ -1277,7 +1491,6 @@
         }
       }
 
-      // Método 4: Texto ASCII
       if (!pesoEncontrado) {
         try {
           const texto = new TextDecoder().decode(data);
@@ -1292,32 +1505,25 @@
         } catch (e) {}
       }
 
-      // Atualizar campo se peso válido encontrado
       if (pesoEncontrado && peso > 0 && peso <= PESO_MAXIMO) {
         const agora = Date.now();
 
-        // Se já confirmou, verificar se o peso mudou significativamente (mexeu na balança)
         if (pesoConfirmado) {
           if (Math.abs(peso - ultimoPesoConfirmado) > TOLERANCIA_MUDANCA) {
-            // Peso mudou após confirmação - voltar a medir!
             pesoConfirmado = false;
             pesoEstavel = peso;
             tempoInicioEstabilizacao = agora;
             pesoInput.value = peso.toFixed(3);
-            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (estabilizando...)`;
             bluetoothStatus.style.color = '#666';
           } else {
-            // Peso ainda estável após confirmação - manter confirmado mas atualizar display
             pesoInput.value = peso.toFixed(3);
           }
         } else {
-          // Ainda não confirmou - verificar estabilização
           if (Math.abs(peso - pesoEstavel) <= TOLERANCIA_PESO) {
-            // Peso estável - verificar tempo
             const tempoEstavel = agora - tempoInicioEstabilizacao;
 
             if (tempoEstavel >= TEMPO_ESTABILIZACAO) {
-              // Peso estável por 2 segundos - CONFIRMAR!
               pesoConfirmado = true;
               ultimoPesoConfirmado = peso;
               pesoInput.value = peso.toFixed(3);
@@ -1325,50 +1531,32 @@
               bluetoothStatus.style.color = '#4CAF50';
               atualizarBotaoSalvar();
 
-              // Feedback visual e sonoro
-              try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.2);
-              } catch (e) {}
-
+              playBeep();
               if (navigator.vibrate) navigator.vibrate(200);
 
             } else {
-              // Ainda estabilizando - mostrar progresso
               const progresso = Math.min(100, (tempoEstavel / TEMPO_ESTABILIZACAO) * 100);
               pesoInput.value = peso.toFixed(3);
               bluetoothStatus.textContent = `Estabilizando... ${progresso.toFixed(0)}%`;
               bluetoothStatus.style.color = '#FF9800';
             }
           } else {
-            // Peso mudou - resetar estabilização
             pesoEstavel = peso;
             tempoInicioEstabilizacao = agora;
             pesoInput.value = peso.toFixed(3);
-            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (aguardando estabilizar...)`;
+            bluetoothStatus.textContent = `Peso: ${peso.toFixed(3)} kg (estabilizando...)`;
             bluetoothStatus.style.color = '#666';
           }
         }
 
         ultimoPesoRecebido = peso;
       }
-      // Não mostrar nada na tela se não encontrar peso válido
     }
 
     // ========================================
-    // SALVAR NO INVENTÁRIO
+    // SALVAR NO INVENTARIO
     // ========================================
 
-    // Atualizar estado do botão salvar
     function atualizarBotaoSalvar() {
       const codigo = input.value.replace(/\D/g, "");
       const quantidade = parseInt(quantidadeInput.value) || 0;
@@ -1380,15 +1568,13 @@
       }
     }
 
-    // Monitorar mudanças
     input.addEventListener('input', atualizarBotaoSalvar);
     quantidadeInput.addEventListener('input', atualizarBotaoSalvar);
 
-    // Sobrescrever função mostrarProduto para guardar produto atual
     const originalMostrarProduto = mostrarProduto;
-    mostrarProduto = function(produto, origem) {
+    mostrarProduto = function(produto, origem, fonte) {
       produtoAtual = produto;
-      originalMostrarProduto(produto, origem);
+      originalMostrarProduto(produto, origem, fonte);
       atualizarBotaoSalvar();
     };
 
@@ -1400,7 +1586,6 @@
     const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
     let buscaNomeTimeout = null;
 
-    // Mostrar/esconder botão X da busca por nome
     buscaNomeInput.addEventListener('input', () => {
       if (buscaNomeInput.value.length > 0) {
         clearBuscaNomeBtn.classList.add('visible');
@@ -1409,7 +1594,6 @@
         autocompleteDropdown.classList.remove('visible');
       }
 
-      // Debounce para busca
       if (buscaNomeTimeout) clearTimeout(buscaNomeTimeout);
 
       if (buscaNomeInput.value.length >= 2) {
@@ -1421,7 +1605,6 @@
       }
     });
 
-    // Limpar busca por nome
     clearBuscaNomeBtn.addEventListener('click', (e) => {
       e.preventDefault();
       buscaNomeInput.value = '';
@@ -1430,7 +1613,6 @@
       buscaNomeInput.focus();
     });
 
-    // Buscar produtos por nome
     async function buscarPorNome(termo) {
       try {
         const resp = await fetch(`/api/buscar-por-nome/${encodeURIComponent(termo)}`);
@@ -1440,24 +1622,21 @@
           autocompleteDropdown.innerHTML = data.produtos.map(p => `
             <div class="autocomplete-item" data-codigo="${p.codigo}" data-nome="${p.nome}">
               <div class="autocomplete-item-nome">${p.nome}</div>
-              <div class="autocomplete-item-codigo">Código: ${p.codigo}</div>
+              <div class="autocomplete-item-codigo">Codigo: ${p.codigo}</div>
             </div>
           `).join('');
           autocompleteDropdown.classList.add('visible');
 
-          // Adicionar eventos de clique
           autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', () => {
               const codigo = item.dataset.codigo;
               const nome = item.dataset.nome;
 
-              // Preencher o código de barras e buscar
               input.value = codigo;
               clearButton.classList.add('visible');
               buscaNomeInput.value = nome;
               autocompleteDropdown.classList.remove('visible');
 
-              // Buscar o produto
               buscar();
             });
           });
@@ -1471,21 +1650,19 @@
       }
     }
 
-    // Fechar dropdown ao clicar fora
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.busca-nome-container')) {
         autocompleteDropdown.classList.remove('visible');
       }
     });
 
-    // Salvar no inventário
     salvarInventarioBtn.addEventListener('click', async () => {
       const codigo = input.value.replace(/\D/g, "");
       const quantidade = parseInt(quantidadeInput.value) || 1;
       const peso = pesoInput.value || '';
 
       if (!codigo) {
-        alert('Digite ou escaneie um código de barras.');
+        alert('Digite ou escaneie um codigo de barras.');
         return;
       }
 
@@ -1527,7 +1704,6 @@
           `;
           salvarInventarioBtn.style.background = result.atualizado ? '#2196F3' : '#4CAF50';
 
-          // Resetar após 2 segundos
           setTimeout(() => {
             salvarInventarioBtn.innerHTML = `
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
@@ -1535,20 +1711,19 @@
                 <polyline points="17,21 17,13 7,13 7,21"/>
                 <polyline points="7,3 7,8 15,8"/>
               </svg>
-              Salvar no Inventário
+              Salvar no Inventario
             `;
             salvarInventarioBtn.style.background = '#000000';
             salvarInventarioBtn.disabled = false;
 
-            // Limpar campos para próximo produto
             quantidadeInput.value = '1';
           }, 2000);
         } else {
           throw new Error(result.error || 'Erro ao salvar');
         }
       } catch (error) {
-        console.error('Erro ao salvar inventário:', error);
-        alert('Erro ao salvar no inventário: ' + error.message);
+        console.error('Erro ao salvar inventario:', error);
+        alert('Erro ao salvar no inventario: ' + error.message);
 
         salvarInventarioBtn.innerHTML = `
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
@@ -1556,13 +1731,11 @@
             <polyline points="17,21 17,13 7,13 7,21"/>
             <polyline points="7,3 7,8 15,8"/>
           </svg>
-          Salvar no Inventário
+          Salvar no Inventario
         `;
         salvarInventarioBtn.disabled = false;
       }
     });
-
-
   </script>
 </body>
 </html>

@@ -34,3 +34,8 @@ build/
 # Temporary files
 *.tmp
 *.temp
+
+# SQLite database (generated from CSV)
+data/produtos.db
+data/produtos.db-wal
+data/produtos.db-shm
