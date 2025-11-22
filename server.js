@@ -6,6 +6,7 @@ import axios from "axios";
 import XLSX from "xlsx";
 import * as cheerio from "cheerio";
 import dotenv from "dotenv";
+import Database from "better-sqlite3";
 import { buscarFotoR2, baixarFotoR2, r2Habilitado } from "./r2-helper.js";
 import { uploadParaOneDrive, onedriveHabilitado, getOneDriveStatus } from "./onedrive-helper.js";
 
@@ -21,11 +22,31 @@ const projectRoot = __dirname;
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Cache em memória otimizado (economizar RAM no Render)
+// -------------------------------------------
+// BANCO DE DADOS SQLite
+// -------------------------------------------
+const DB_PATH = path.join(projectRoot, "data", "produtos.db");
+let db = null;
+
+function getDatabase() {
+  if (!db) {
+    if (!fs.existsSync(DB_PATH)) {
+      console.log("⚠️ Banco SQLite não encontrado. Execute: node migrate-to-sqlite.js");
+      return null;
+    }
+    db = new Database(DB_PATH, { readonly: false });
+    db.pragma('journal_mode = WAL');
+    db.pragma('cache_size = 5000');
+    console.log("✅ Banco SQLite conectado");
+  }
+  return db;
+}
+
+// Fallback para CSV caso SQLite não exista
 let cacheBase = null;
-let cacheBaseMap = null; // Índice Map para busca O(1)
+let cacheBaseMap = null;
 let ultimaAtualizacao = 0;
-const CACHE_TIMEOUT = 300000; // 5 minutos - cache mais longo, menos recargas
+const CACHE_TIMEOUT = 300000;
 
 app.use(express.json());
 
@@ -82,9 +103,108 @@ function normalizarCodigo(valor) {
 }
 
 // -------------------------------------------
-// CARREGA BASE LOCAL (CSV ou XLSX) COM CACHE
+// BUSCA NO SQLite (Principal)
+// -------------------------------------------
+function buscarNoSQLite(codigo) {
+  const database = getDatabase();
+  if (!database) return null;
+
+  try {
+    // Buscar na tabela principal
+    const stmt = database.prepare(`
+      SELECT codigo_barras, produto, grupo, subgrupo, marca, categoria, ncm,
+             unidade_medida, quantidade, peso_liquido, peso_bruto, preco_medio, fonte
+      FROM produtos
+      WHERE codigo_barras = ?
+    `);
+    const produto = stmt.get(codigo);
+
+    if (produto) {
+      return {
+        "cod de barra": produto.codigo_barras,
+        "produto": produto.produto,
+        "grupo": produto.grupo,
+        "subgrupo": produto.subgrupo,
+        "marca": produto.marca,
+        "categoria": produto.categoria,
+        "ncm": produto.ncm,
+        "unidade medida": produto.unidade_medida,
+        "quantidade": produto.quantidade,
+        "peso líquido": produto.peso_liquido,
+        "peso bruto": produto.peso_bruto,
+        "preço médio": produto.preco_medio,
+        "fonte": produto.fonte || "local"
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.error("Erro ao buscar no SQLite:", err);
+    return null;
+  }
+}
+
+// -------------------------------------------
+// BUSCA CACHE ONLINE NO SQLite
+// -------------------------------------------
+function buscarCacheOnline(codigo) {
+  const database = getDatabase();
+  if (!database) return null;
+
+  try {
+    const stmt = database.prepare(`
+      SELECT codigo_barras, nome, marca, categoria, fonte, data_coleta
+      FROM produtos_online
+      WHERE codigo_barras = ?
+    `);
+    const produto = stmt.get(codigo);
+
+    if (produto) {
+      return {
+        "cod de barra": produto.codigo_barras,
+        "produto": produto.nome,
+        "nome": produto.nome,
+        "marca": produto.marca || "",
+        "categoria": produto.categoria || "",
+        "fonte": produto.fonte
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.error("Erro ao buscar cache online:", err);
+    return null;
+  }
+}
+
+// -------------------------------------------
+// SALVAR PRODUTO ONLINE NO SQLite
+// -------------------------------------------
+function salvarProdutoOnlineSQLite(codigo, nome, marca, categoria, fonte) {
+  const database = getDatabase();
+  if (!database) return;
+
+  try {
+    const stmt = database.prepare(`
+      INSERT OR REPLACE INTO produtos_online (codigo_barras, nome, marca, categoria, fonte, data_coleta)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `);
+    stmt.run(codigo, nome, marca || '', categoria || '', fonte);
+    console.log(`✅ Produto salvo no SQLite: ${codigo} - ${nome} (fonte: ${fonte})`);
+  } catch (err) {
+    console.error("Erro ao salvar no SQLite:", err);
+  }
+}
+
+// -------------------------------------------
+// CARREGA BASE LOCAL (CSV ou XLSX) - FALLBACK
 // -------------------------------------------
 function carregarBase() {
+  // Se SQLite existe, não precisamos do CSV
+  if (fs.existsSync(DB_PATH)) {
+    return { produtos: [], map: new Map() };
+  }
+
   const agora = Date.now();
 
   // Retorna cache se ainda válido
@@ -107,7 +227,6 @@ function carregarBase() {
       return { produtos: [], map: new Map() };
     }
 
-    // Detectar delimitador (ponto e vírgula ou vírgula)
     const delimitador = linhas[0].includes(';') ? ';' : ',';
     const cabecalhos = linhas[0].split(delimitador).map(h => h.trim().toLowerCase());
 
@@ -120,7 +239,6 @@ function carregarBase() {
         obj[cab] = (colunas[idx] || "").trim();
       });
 
-      // Normalizar código de barra
       const codigoOriginal = obj["cod. de barra"] || obj["cod de barra"] || obj["codigo de barra"] || obj["gtin"];
       obj["cod de barra"] = normalizarCodigo(codigoOriginal);
 
@@ -129,7 +247,6 @@ function carregarBase() {
       }
     }
 
-    // Criar índice Map para busca O(1)
     const map = new Map();
     produtos.forEach(produto => {
       const codigo = produto["cod de barra"];
@@ -138,7 +255,6 @@ function carregarBase() {
       }
     });
 
-    // Atualizar cache
     cacheBase = produtos;
     cacheBaseMap = map;
     ultimaAtualizacao = agora;
@@ -161,7 +277,6 @@ function carregarBase() {
         p[keyLower] = String(l[key] ?? "").trim();
       }
 
-      // Normalizar código de barra
       const codigoOriginal = p["cod. de barra"] || p["cod de barra"] || p["codigo de barra"] || p["gtin"];
       p["cod de barra"] = normalizarCodigo(codigoOriginal);
 
@@ -170,7 +285,6 @@ function carregarBase() {
       }
     });
 
-    // Criar índice Map para busca O(1)
     const map = new Map();
     produtos.forEach(produto => {
       const codigo = produto["cod de barra"];
@@ -179,7 +293,6 @@ function carregarBase() {
       }
     });
 
-    // Atualizar cache
     cacheBase = produtos;
     cacheBaseMap = map;
     ultimaAtualizacao = agora;
@@ -204,19 +317,15 @@ function buscarFotoLocal(codigo) {
     const arquivos = fs.readdirSync(fotosDir);
     const codigoNormalizado = normalizarCodigo(codigo).toLowerCase();
 
-    // Procurar arquivo que comece com o código de barras
     const foto = arquivos.find(arquivo => {
-      // Ignorar arquivos ocultos
       if (arquivo.startsWith('.')) return false;
 
       const nomeArquivo = arquivo.toLowerCase();
       const extensoesValidas = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
-      // Verificar se tem extensão válida
       const temExtensaoValida = extensoesValidas.some(ext => nomeArquivo.endsWith(ext));
       if (!temExtensaoValida) return false;
 
-      // Aceitar formatos: codigo.ext ou codigo_*.ext
       return nomeArquivo.startsWith(codigoNormalizado);
     });
 
@@ -240,7 +349,6 @@ async function buscarFoto(codigo) {
 
     if (fotoR2) {
       console.log(`✅ Foto encontrada no R2: ${fotoR2.filename}`);
-      // Usar URL do proxy local ao invés da URL do R2 (evita problemas de autenticação)
       return {
         fonte: 'r2',
         url: `/foto-r2/${fotoR2.filename}`,
@@ -274,7 +382,6 @@ function limparNome(nome) {
   if (!nome) return "";
   nome = nome.trim();
 
-  // Remover tudo após separadores comuns
   const separadores = [" | ", " - ", " — ", " – "];
   for (const sep of separadores) {
     if (nome.includes(sep)) {
@@ -311,7 +418,7 @@ async function buscarOpenFoodFacts(codigo) {
           codigo: codigo,
           marca: produto.brands || "",
           categoria: produto.categories || "",
-          origem: "openfoodfacts"
+          origem: "Open Food Facts"
         };
       }
     }
@@ -348,7 +455,7 @@ async function buscarOpenBeautyFacts(codigo) {
           codigo: codigo,
           marca: produto.brands || "",
           categoria: produto.categories || "",
-          origem: "openbeautyfacts"
+          origem: "Open Beauty Facts"
         };
       }
     }
@@ -385,7 +492,7 @@ async function buscarOpenPetFoodFacts(codigo) {
           codigo: codigo,
           marca: produto.brands || "",
           categoria: produto.categories || "",
-          origem: "openpetfoodfacts"
+          origem: "Open Pet Food Facts"
         };
       }
     }
@@ -403,7 +510,6 @@ async function buscarUPCItemDB(codigo) {
   console.log("🏷️ Buscando no UPCItemDB...");
 
   try {
-    // UPCItemDB tem uma API gratuita com limite
     const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${codigo}`;
     const resposta = await axios.get(url, {
       timeout: 10000,
@@ -424,12 +530,11 @@ async function buscarUPCItemDB(codigo) {
           codigo: codigo,
           marca: item.brand || "",
           categoria: item.category || "",
-          origem: "upcitemdb"
+          origem: "UPCItemDB"
         };
       }
     }
   } catch (err) {
-    // UPCItemDB pode retornar 429 (rate limit) ou 404
     if (err.response && err.response.status === 429) {
       console.log("⚠️ UPCItemDB: Limite de requisições atingido");
     } else {
@@ -444,7 +549,6 @@ async function buscarUPCItemDB(codigo) {
 // BUSCA EM TODAS AS FONTES ONLINE
 // -------------------------------------------
 async function buscarEmTodasFontes(codigo) {
-  // Buscar em paralelo para mais velocidade
   const [openFood, openBeauty, openPet, upcItem] = await Promise.all([
     buscarOpenFoodFacts(codigo).catch(() => null),
     buscarOpenBeautyFacts(codigo).catch(() => null),
@@ -452,7 +556,6 @@ async function buscarEmTodasFontes(codigo) {
     buscarUPCItemDB(codigo).catch(() => null)
   ]);
 
-  // Retornar o primeiro resultado encontrado
   return openFood || openBeauty || openPet || upcItem || null;
 }
 
@@ -465,7 +568,6 @@ async function buscarCosmos(codigo) {
   console.log(`📋 Código: ${codigo}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // Headers iguais ao script Python
   const headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -473,7 +575,6 @@ async function buscarCosmos(codigo) {
     "Referer": "https://cosmos.bluesoft.com.br/"
   };
 
-  // URLs na mesma ordem do script Python
   const urls = [
     `https://api.cosmos.bluesoft.com.br/produtos/${codigo}`,
     `https://cosmos.bluesoft.com.br/produtos/${codigo}`
@@ -497,21 +598,18 @@ async function buscarCosmos(codigo) {
         continue;
       }
 
-      // Extrair nome e NCM do HTML (igual ao script Python)
       const html = resposta.data;
       if (!html) continue;
 
       const $ = cheerio.load(html);
       let nome = null;
 
-      // 1. Primeiro: span#product_description (principal do Cosmos)
       const prodDesc = $('span#product_description').text().trim();
       if (prodDesc) {
         nome = limparNome(prodDesc);
         console.log("✅ Nome encontrado (span#product_description):", nome);
       }
 
-      // 2. Fallback: meta og:title
       if (!nome) {
         const ogTitle = $('meta[property="og:title"]').attr('content');
         if (ogTitle && ogTitle.trim()) {
@@ -520,7 +618,6 @@ async function buscarCosmos(codigo) {
         }
       }
 
-      // 3. Fallback: h1
       if (!nome) {
         const h1Text = $('h1').first().text().trim();
         if (h1Text) {
@@ -530,7 +627,7 @@ async function buscarCosmos(codigo) {
       }
 
       if (nome && nome !== "-") {
-        return { nome: nome, codigo: codigo };
+        return { nome: nome, codigo: codigo, origem: "Cosmos" };
       }
 
     } catch (err) {
@@ -548,7 +645,7 @@ async function buscarCosmos(codigo) {
 // -------------------------------------------
 // SALVA PRODUTOS ENCONTRADOS ONLINE NO EXCEL
 // -------------------------------------------
-function salvarProduto(codigo, nome) {
+function salvarProduto(codigo, nome, fonte) {
   const excelPath = path.join(projectRoot, "data", "OK BASE DO APP COLETADO.xlsx");
   const jsonPath = path.join(projectRoot, "data", "produtos.json");
 
@@ -563,15 +660,17 @@ function salvarProduto(codigo, nome) {
   }
 
   if (!lista.find(x => x.codigo === codigo)) {
-    lista.push({ codigo, nome });
+    lista.push({ codigo, nome, fonte });
     fs.writeFileSync(jsonPath, JSON.stringify(lista, null, 2));
   }
+
+  // Salvar no SQLite também
+  salvarProdutoOnlineSQLite(codigo, nome, '', '', fonte);
 
   // Salvar no Excel
   let workbook;
   let dados = [];
 
-  // Tentar carregar Excel existente
   if (fs.existsSync(excelPath)) {
     try {
       workbook = XLSX.readFile(excelPath);
@@ -583,30 +682,35 @@ function salvarProduto(codigo, nome) {
     }
   }
 
-  // Verificar se produto já existe no Excel
   const jaExiste = dados.some(item => {
     const codigoExistente = normalizarCodigo(item["Código de Barra"] || item["codigo"] || item["Cod. de Barra"]);
     return codigoExistente === codigo;
   });
 
   if (!jaExiste) {
-    // Adicionar novo produto
     dados.push({
       "Código de Barra": codigo,
       "Nome do Produto": nome,
+      "Fonte": fonte,
       "Data de Coleta": new Date().toLocaleString("pt-BR")
     });
 
-    // Criar nova planilha
     const novaSheet = XLSX.utils.json_to_sheet(dados);
+
+    // Ajustar largura das colunas
+    novaSheet['!cols'] = [
+      { wch: 18 }, // Código de Barra
+      { wch: 50 }, // Nome do Produto
+      { wch: 20 }, // Fonte
+      { wch: 20 }  // Data de Coleta
+    ];
+
     const novoWorkbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(novoWorkbook, novaSheet, "Produtos Coletados");
 
-    // Salvar arquivo
     XLSX.writeFile(novoWorkbook, excelPath);
-    console.log("✅ Produto salvo no Excel:", codigo, "-", nome);
+    console.log(`✅ Produto salvo no Excel: ${codigo} - ${nome} (fonte: ${fonte})`);
 
-    // Sincronizar com OneDrive (em background, não bloqueia)
     if (onedriveHabilitado()) {
       uploadParaOneDrive(excelPath).catch(err => {
         console.error("⚠️ Erro ao sincronizar com OneDrive:", err.message);
@@ -616,7 +720,7 @@ function salvarProduto(codigo, nome) {
 }
 
 // -------------------------------------------
-// API BUSCA POR NOME (autocomplete)
+// API BUSCA POR NOME (autocomplete) - SQLite
 // -------------------------------------------
 app.get("/api/buscar-por-nome/:termo", (req, res) => {
   const termo = (req.params.termo || "").toLowerCase().trim();
@@ -627,13 +731,42 @@ app.get("/api/buscar-por-nome/:termo", (req, res) => {
 
   console.log("🔍 Buscando produtos por nome:", termo);
 
+  const database = getDatabase();
+
+  // Se SQLite existe, usa ele
+  if (database) {
+    try {
+      const stmt = database.prepare(`
+        SELECT codigo_barras, produto, marca, categoria
+        FROM produtos
+        WHERE produto LIKE ?
+        LIMIT 10
+      `);
+      const resultados = stmt.all(`%${termo}%`);
+
+      console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}"`);
+
+      return res.json({
+        ok: true,
+        produtos: resultados.map(p => ({
+          codigo: p.codigo_barras,
+          nome: p.produto,
+          marca: p.marca || "",
+          categoria: p.categoria || ""
+        }))
+      });
+    } catch (err) {
+      console.error("Erro na busca por nome:", err);
+    }
+  }
+
+  // Fallback para CSV
   const { produtos } = carregarBase();
 
-  // Buscar produtos que contenham o termo no nome
   const resultados = produtos.filter(p => {
     const nome = (p.produto || p.nome || "").toLowerCase();
     return nome.includes(termo);
-  }).slice(0, 10); // Limitar a 10 resultados
+  }).slice(0, 10);
 
   console.log(`✅ Encontrados ${resultados.length} produtos para "${termo}"`);
 
@@ -659,43 +792,76 @@ app.get("/consulta/:codigo", async (req, res) => {
 
   console.log("🔍 Buscando código:", codigo);
 
-  // 1ª BASE LOCAL (Excel/CSV) - Busca otimizada com Map O(1)
+  // 1ª SQLITE (se disponível)
+  const produtoSQLite = buscarNoSQLite(codigo);
+  if (produtoSQLite) {
+    console.log("✅ Encontrado no SQLite (base local)");
+
+    const foto = await buscarFoto(codigo);
+    if (foto) {
+      produtoSQLite.foto = foto;
+    }
+
+    return res.json({
+      ok: true,
+      origem: "local",
+      fonte: "Base Local",
+      produto: produtoSQLite
+    });
+  }
+
+  // 2ª CACHE ONLINE NO SQLITE
+  const cacheOnline = buscarCacheOnline(codigo);
+  if (cacheOnline) {
+    console.log("✅ Encontrado no cache online (SQLite)");
+
+    const foto = await buscarFoto(codigo);
+
+    return res.json({
+      ok: true,
+      origem: "cache",
+      fonte: cacheOnline.fonte,
+      produto: {
+        ...cacheOnline,
+        foto: foto
+      }
+    });
+  }
+
+  // 3ª BASE LOCAL CSV (fallback se SQLite não existe)
   const { map: baseLocalMap } = carregarBase();
   const encontradoLocal = baseLocalMap.get(codigo);
 
   if (encontradoLocal) {
-    console.log("✅ Encontrado na base local");
+    console.log("✅ Encontrado na base local (CSV)");
 
-    // Buscar foto do produto
     const foto = await buscarFoto(codigo);
-    console.log("📸 Foto retornada pela busca:", JSON.stringify(foto));
     if (foto) {
       encontradoLocal.foto = foto;
-      console.log("📸 Foto adicionada ao produto:", JSON.stringify(encontradoLocal.foto));
     }
 
-    console.log("📦 Enviando produto:", JSON.stringify(encontradoLocal));
     return res.json({
       ok: true,
       origem: "local",
+      fonte: "Base Local",
       produto: encontradoLocal
     });
   }
 
-  // 2ª produtos.json (cache de buscas online anteriores)
+  // 4ª produtos.json (cache de buscas online anteriores)
   const jsonPath = path.join(projectRoot, "data", "produtos.json");
   if (fs.existsSync(jsonPath)) {
     const cache = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
     const noCache = cache.find(p => p.codigo === codigo);
     if (noCache) {
-      console.log("✅ Encontrado no cache");
+      console.log("✅ Encontrado no cache JSON");
 
-      // Buscar foto do produto
       const foto = await buscarFoto(codigo);
 
       return res.json({
         ok: true,
-        origem: "cosmos",
+        origem: "cache",
+        fonte: noCache.fonte || "Cache",
         produto: {
           "cod de barra": noCache.codigo,
           nome: noCache.nome,
@@ -705,20 +871,20 @@ app.get("/consulta/:codigo", async (req, res) => {
     }
   }
 
-  // 3ª BUSCA ONLINE - APIs abertas (Open Food Facts, UPCItemDB, etc.)
+  // 5ª BUSCA ONLINE - APIs abertas (Open Food Facts, UPCItemDB, etc.)
   console.log("🌐 Buscando em APIs abertas...");
   try {
     const resultadoAPIs = await buscarEmTodasFontes(codigo);
     if (resultadoAPIs && resultadoAPIs.nome) {
       console.log(`✅ Encontrado em ${resultadoAPIs.origem}:`, resultadoAPIs.nome);
-      salvarProduto(codigo, resultadoAPIs.nome);
+      salvarProduto(codigo, resultadoAPIs.nome, resultadoAPIs.origem);
 
-      // Buscar foto do produto
       const foto = await buscarFoto(codigo);
 
       return res.json({
         ok: true,
-        origem: resultadoAPIs.origem,
+        origem: "online",
+        fonte: resultadoAPIs.origem,
         produto: {
           "cod de barra": codigo,
           nome: resultadoAPIs.nome,
@@ -733,21 +899,21 @@ app.get("/consulta/:codigo", async (req, res) => {
     console.error("❌ Erro nas APIs abertas:", erroAPIs.message);
   }
 
-  // 4ª BUSCA ONLINE - Cosmos (fallback, faz scraping de HTML)
+  // 6ª BUSCA ONLINE - Cosmos (fallback, faz scraping de HTML)
   console.log("🌐 Buscando no Cosmos (fallback)...");
   try {
     const resultadoCosmos = await buscarCosmos(codigo);
     if (resultadoCosmos && resultadoCosmos.nome) {
       const nomeOnline = resultadoCosmos.nome;
       console.log("✅ Encontrado no Cosmos:", nomeOnline);
-      salvarProduto(codigo, nomeOnline);
+      salvarProduto(codigo, nomeOnline, "Cosmos");
 
-      // Buscar foto do produto
       const foto = await buscarFoto(codigo);
 
       return res.json({
         ok: true,
-        origem: "cosmos",
+        origem: "online",
+        fonte: "Cosmos",
         produto: {
           "cod de barra": codigo,
           nome: nomeOnline,
@@ -779,7 +945,6 @@ app.post("/api/inventario", async (req, res) => {
     const inventarioPath = path.join(projectRoot, "data", "Inventário.xlsx");
     let dados = [];
 
-    // Carregar dados existentes se o arquivo existir
     if (fs.existsSync(inventarioPath)) {
       try {
         const workbook = XLSX.readFile(inventarioPath);
@@ -791,7 +956,6 @@ app.post("/api/inventario", async (req, res) => {
       }
     }
 
-    // Verificar se o produto já existe no inventário (evitar duplicação)
     const codigoNormalizado = normalizarCodigo(codigo);
     const indexExistente = dados.findIndex(item => {
       const codigoItem = normalizarCodigo(item["Código de Barras"] || item["codigo"] || "");
@@ -800,19 +964,16 @@ app.post("/api/inventario", async (req, res) => {
 
     let mensagem = "";
     if (indexExistente >= 0) {
-      // Produto já existe - somar quantidade
       const qtdAnterior = parseInt(dados[indexExistente]["Quantidade"]) || 0;
       const qtdNova = parseInt(quantidade) || 1;
       dados[indexExistente]["Quantidade"] = qtdAnterior + qtdNova;
       dados[indexExistente]["Data/Hora"] = dataHora ? new Date(dataHora).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR");
-      // Atualizar peso se informado
       if (peso) {
         dados[indexExistente]["Peso (kg)"] = peso;
       }
       mensagem = `Quantidade atualizada: ${qtdAnterior} + ${qtdNova} = ${dados[indexExistente]["Quantidade"]}`;
       console.log(`📦 Inventário: Item existente atualizado - ${codigo} - Nova qtd: ${dados[indexExistente]["Quantidade"]}`);
     } else {
-      // Produto novo - adicionar registro
       dados.push({
         "Código de Barras": codigo,
         "Produto": produto || "",
@@ -824,25 +985,21 @@ app.post("/api/inventario", async (req, res) => {
       console.log(`✅ Inventário: Novo item adicionado - ${codigo} - ${produto}`);
     }
 
-    // Criar nova planilha
     const novaSheet = XLSX.utils.json_to_sheet(dados);
 
-    // Ajustar largura das colunas
     novaSheet['!cols'] = [
-      { wch: 18 }, // Código de Barras
-      { wch: 40 }, // Produto
-      { wch: 12 }, // Quantidade
-      { wch: 12 }, // Peso
-      { wch: 20 }  // Data/Hora
+      { wch: 18 },
+      { wch: 40 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 20 }
     ];
 
     const novoWorkbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(novoWorkbook, novaSheet, "Inventário");
 
-    // Salvar arquivo
     XLSX.writeFile(novoWorkbook, inventarioPath);
 
-    // Sincronizar com OneDrive (em background, não bloqueia)
     if (onedriveHabilitado()) {
       uploadParaOneDrive(inventarioPath)
         .catch(err => {
@@ -868,12 +1025,10 @@ app.post("/api/inventario", async (req, res) => {
 // API ONEDRIVE - Status e sincronização
 // -------------------------------------------
 
-// Status do OneDrive
 app.get("/api/onedrive/status", (req, res) => {
   res.json(getOneDriveStatus());
 });
 
-// Sincronizar arquivos manualmente
 app.post("/api/onedrive/sincronizar", async (req, res) => {
   if (!onedriveHabilitado()) {
     return res.json({
@@ -887,13 +1042,11 @@ app.post("/api/onedrive/sincronizar", async (req, res) => {
 
   const resultados = [];
 
-  // Sincronizar Inventário
   if (fs.existsSync(inventarioPath)) {
     const result = await uploadParaOneDrive(inventarioPath);
     resultados.push({ arquivo: "Inventário.xlsx", ...result });
   }
 
-  // Sincronizar OK BASE DO APP COLETADO
   if (fs.existsSync(okBasePath)) {
     const result = await uploadParaOneDrive(okBasePath);
     resultados.push({ arquivo: "OK BASE DO APP COLETADO.xlsx", ...result });
@@ -904,6 +1057,38 @@ app.post("/api/onedrive/sincronizar", async (req, res) => {
     mensagem: "Sincronização concluída",
     resultados
   });
+});
+
+// -------------------------------------------
+// API ESTATÍSTICAS DO BANCO
+// -------------------------------------------
+app.get("/api/stats", (req, res) => {
+  const database = getDatabase();
+
+  if (!database) {
+    return res.json({
+      ok: false,
+      usandoSQLite: false,
+      mensagem: "SQLite não configurado. Execute: node migrate-to-sqlite.js"
+    });
+  }
+
+  try {
+    const totalProdutos = database.prepare('SELECT COUNT(*) as total FROM produtos').get();
+    const totalOnline = database.prepare('SELECT COUNT(*) as total FROM produtos_online').get();
+
+    res.json({
+      ok: true,
+      usandoSQLite: true,
+      totalProdutos: totalProdutos.total,
+      totalProdutosOnline: totalOnline.total
+    });
+  } catch (err) {
+    res.json({
+      ok: false,
+      error: err.message
+    });
+  }
 });
 
 // -------------------------------------------
@@ -921,5 +1106,16 @@ app.listen(PORT, () => {
   console.log(" MISE Scanner rodando!");
   console.log(` Porta: ${PORT}`);
   console.log(` URL: http://localhost:${PORT}`);
+
+  // Verificar se SQLite está disponível
+  const database = getDatabase();
+  if (database) {
+    const stats = database.prepare('SELECT COUNT(*) as total FROM produtos').get();
+    console.log(` SQLite: ${stats.total.toLocaleString()} produtos`);
+  } else {
+    console.log(" SQLite: NÃO CONFIGURADO (usando CSV)");
+    console.log(" Execute: node migrate-to-sqlite.js");
+  }
+
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 });
