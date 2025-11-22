@@ -395,18 +395,7 @@
       display: flex;
     }
 
-    /* Forcar orientacao horizontal no scanner */
-    @media screen and (orientation: portrait) {
-      #scanner-container.active {
-        transform: rotate(90deg);
-        transform-origin: center center;
-        width: 100vh;
-        height: 100vw;
-        position: fixed;
-        top: calc((100vh - 100vw) / 2);
-        left: calc((100vw - 100vh) / 2);
-      }
-    }
+    /* Camera segue orientacao natural do dispositivo */
 
     #scanner-video-wrapper {
       position: relative;
