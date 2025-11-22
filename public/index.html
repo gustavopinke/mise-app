@@ -395,7 +395,18 @@
       display: flex;
     }
 
-    /* Camera segue orientacao natural do dispositivo */
+    /* Forcar orientacao horizontal no scanner */
+    @media screen and (orientation: portrait) {
+      #scanner-container.active {
+        transform: rotate(90deg);
+        transform-origin: center center;
+        width: 100vh;
+        height: 100vw;
+        position: fixed;
+        top: calc((100vh - 100vw) / 2);
+        left: calc((100vw - 100vh) / 2);
+      }
+    }
 
     #scanner-video-wrapper {
       position: relative;
@@ -411,24 +422,6 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-    }
-
-    /* Ajustar area de scan para orientacao portrait */
-    @media screen and (orientation: portrait) {
-      #scan-area {
-        width: 90%;
-        max-width: none;
-        height: 100px;
-      }
-    }
-
-    /* Ajustar area de scan para orientacao landscape */
-    @media screen and (orientation: landscape) {
-      #scan-area {
-        width: 60%;
-        max-width: 500px;
-        height: 120px;
-      }
     }
 
     /* Overlay com marcas de scanner */
@@ -731,12 +724,12 @@
       margin-top: 2px;
     }
 
-    /* Modo continuo toggle - posicionado acima da area de scan */
+    /* Modo continuo toggle */
     .scanner-mode-toggle {
       position: absolute;
-      top: 25%;
+      top: 70px;
       left: 50%;
-      transform: translate(-50%, -100%);
+      transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.7);
       padding: 8px 15px;
       border-radius: 20px;
@@ -942,7 +935,7 @@
     <button id="close-modal">X Fechar</button>
   </div>
 
-  <script src="https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es2018.min.js"></script>
+  <script src="https://unpkg.com/@AugustasCole/barcode-detector-polyfill@1.1.0/dist/umd/bundle.min.js"></script>
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
@@ -969,29 +962,17 @@
 
     // Inicializar BarcodeDetector
     async function initBarcodeDetector() {
-      try {
-        // Usar o polyfill se BarcodeDetector nativo nao existir
-        const DetectorClass = window.BarcodeDetector || window.BarcodeDetectorPolyfill;
-
-        if (!DetectorClass) {
-          console.error('BarcodeDetector nao disponivel');
-          alert('Seu navegador nao suporta leitura de codigo de barras. Use Chrome ou Safari.');
-          return false;
-        }
-
-        const formats = await DetectorClass.getSupportedFormats();
+      if ('BarcodeDetector' in window) {
+        const formats = await BarcodeDetector.getSupportedFormats();
         console.log('Formatos suportados:', formats);
-
-        barcodeDetector = new DetectorClass({
+        barcodeDetector = new BarcodeDetector({
           formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
         });
-
-        console.log('BarcodeDetector inicializado com sucesso');
-        return true;
-      } catch (e) {
-        console.error('Erro ao inicializar BarcodeDetector:', e);
-        alert('Erro ao inicializar leitor de codigo de barras: ' + e.message);
-        return false;
+      } else {
+        console.warn('BarcodeDetector nao suportado nativamente, usando polyfill');
+        barcodeDetector = new BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
+        });
       }
     }
 
@@ -1175,72 +1156,43 @@
     };
 
     async function abrirScanner() {
-      scannerContainer.classList.add('active');
-      scanStatusText.textContent = "Iniciando camera...";
-      scanStatusBar.className = '';
-      scanCount = 0;
-      scanCountSpan.textContent = '0';
-
-      // Inicializar detector de codigo de barras
-      if (!barcodeDetector) {
-        try {
-          await initBarcodeDetector();
-        } catch (e) {
-          console.warn('Erro ao inicializar detector:', e);
-        }
-      }
-
-      // Tentar abrir camera com diferentes configuracoes
-      let cameraAberta = false;
-
-      // Detectar orientacao atual da tela
-      const isPortrait = window.innerHeight > window.innerWidth;
-
-      // Configurar constraints baseado na orientacao
-      const tentativas = isPortrait ? [
-        // Portrait: altura maior que largura
-        { video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 1280 } } },
-        { video: { facingMode: 'environment' } },
-        { video: true }
-      ] : [
-        // Landscape: largura maior que altura
-        { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
-        { video: { facingMode: 'environment' } },
-        { video: true }
-      ];
-
-      for (const constraints of tentativas) {
-        if (cameraAberta) break;
-        try {
-          console.log('Tentando:', JSON.stringify(constraints));
-          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-          cameraAberta = true;
-          console.log('Camera aberta com sucesso!');
-        } catch (e) {
-          console.warn('Falha com constraints:', constraints, e.message);
-        }
-      }
-
-      if (!cameraAberta || !mediaStream) {
-        alert('Nao foi possivel acessar a camera. Verifique as permissoes.');
-        fecharScanner();
-        return;
-      }
-
       try {
+        scannerContainer.classList.add('active');
+        scanStatusText.textContent = "Iniciando camera...";
+        scanStatusBar.className = '';
+        scanCount = 0;
+        scanCountSpan.textContent = '0';
+
+        // Inicializar detector de codigo de barras
+        if (!barcodeDetector) {
+          await initBarcodeDetector();
+        }
+
+        // Configuracoes da camera - preferir traseira com alta resolucao
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            focusMode: { ideal: 'continuous' },
+            zoom: { ideal: 1.5 }
+          }
+        };
+
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         scannerVideo.srcObject = mediaStream;
 
-        // Tentar aplicar configuracoes avancadas (opcional)
-        try {
-          const track = mediaStream.getVideoTracks()[0];
-          if (track && track.getCapabilities) {
-            const capabilities = track.getCapabilities();
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-            }
-          }
-        } catch (e) {
-          console.warn('Config avancadas nao suportadas:', e.message);
+        // Aplicar configuracoes avancadas
+        const track = mediaStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+
+        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+          await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        }
+
+        if (capabilities.zoom && capabilities.zoom.max > 1) {
+          const optimalZoom = Math.min(1.5, capabilities.zoom.max);
+          await track.applyConstraints({ advanced: [{ zoom: optimalZoom }] });
         }
 
         await scannerVideo.play();
@@ -1257,7 +1209,7 @@
 
         let mensagem = 'Nao foi possivel acessar a camera.';
         if (err.name === 'NotAllowedError') {
-          mensagem = 'Permissao de camera negada. Va em Configuracoes > Safari > Camera.';
+          mensagem = 'Permissao de camera negada.';
         } else if (err.name === 'NotFoundError') {
           mensagem = 'Nenhuma camera encontrada.';
         }
