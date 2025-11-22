@@ -27,17 +27,39 @@ const PORT = process.env.PORT || 10000;
 // -------------------------------------------
 const DB_PATH = path.join(projectRoot, "data", "produtos.db");
 let db = null;
+let sqliteDisponivel = true;
 
 function getDatabase() {
+  if (!sqliteDisponivel) return null;
+
   if (!db) {
+    // Verificar se o arquivo do banco existe
     if (!fs.existsSync(DB_PATH)) {
-      console.log("⚠️ Banco SQLite não encontrado. Execute: node migrate-to-sqlite.js");
+      console.log("⚠️ Banco SQLite não encontrado em:", DB_PATH);
+      console.log("⚠️ Execute: node migrate-to-sqlite.js");
       return null;
     }
-    db = new Database(DB_PATH, { readonly: false });
-    db.pragma('journal_mode = WAL');
-    db.pragma('cache_size = 5000');
-    console.log("✅ Banco SQLite conectado");
+
+    try {
+      // Verificar tamanho do arquivo
+      const stats = fs.statSync(DB_PATH);
+      console.log(`📂 Arquivo do banco encontrado: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+
+      // Tentar abrir o banco
+      db = new Database(DB_PATH, { readonly: false });
+      db.pragma('journal_mode = WAL');
+      db.pragma('cache_size = 5000');
+
+      // Testar se o banco funciona
+      const teste = db.prepare('SELECT COUNT(*) as total FROM produtos').get();
+      console.log(`✅ Banco SQLite conectado: ${teste.total.toLocaleString()} produtos`);
+    } catch (err) {
+      console.error("❌ Erro ao abrir SQLite:", err.message);
+      console.log("⚠️ Usando fallback para CSV");
+      sqliteDisponivel = false;
+      db = null;
+      return null;
+    }
   }
   return db;
 }
@@ -1129,15 +1151,28 @@ app.listen(PORT, () => {
   console.log(" MISE Scanner rodando!");
   console.log(` Porta: ${PORT}`);
   console.log(` URL: http://localhost:${PORT}`);
+  console.log(` Diretorio: ${projectRoot}`);
+  console.log(` Banco: ${DB_PATH}`);
 
   // Verificar se SQLite está disponível
-  const database = getDatabase();
-  if (database) {
-    const stats = database.prepare('SELECT COUNT(*) as total FROM produtos').get();
-    console.log(` SQLite: ${stats.total.toLocaleString()} produtos`);
-  } else {
-    console.log(" SQLite: NÃO CONFIGURADO (usando CSV)");
-    console.log(" Execute: node migrate-to-sqlite.js");
+  try {
+    const database = getDatabase();
+    if (database) {
+      const stats = database.prepare('SELECT COUNT(*) as total FROM produtos').get();
+      const statsOnline = database.prepare('SELECT COUNT(*) as total FROM produtos_online').get();
+      console.log(` SQLite: ${stats.total.toLocaleString()} produtos locais`);
+      console.log(` Cache online: ${statsOnline.total.toLocaleString()} produtos`);
+    } else {
+      console.log(" SQLite: NAO CONFIGURADO");
+      // Carregar CSV como fallback
+      const { produtos } = carregarBase();
+      console.log(` CSV Fallback: ${produtos.length.toLocaleString()} produtos`);
+    }
+  } catch (err) {
+    console.error(" Erro ao verificar banco:", err.message);
+    // Carregar CSV como fallback
+    const { produtos } = carregarBase();
+    console.log(` CSV Fallback: ${produtos.length.toLocaleString()} produtos`);
   }
 
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

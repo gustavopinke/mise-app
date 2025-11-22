@@ -944,27 +944,49 @@
     <button id="close-modal">X Fechar</button>
   </div>
 
-  <!-- Polyfill para BarcodeDetector - versao mais confiavel -->
-  <script src="https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es2018.min.js"></script>
+  <!-- Polyfill para BarcodeDetector - usando ZXing-js como base -->
+  <script src="https://unpkg.com/@AktaryTech/barcode-detector@2.2.7/dist/es2018.min.js"></script>
   <script>
+    // Detector global que sera inicializado
+    let detectorGlobal = null;
+    let polyfillCarregado = false;
+
     // Inicializar detector antecipadamente
     (async function() {
       try {
-        // Aguardar polyfill carregar
-        await new Promise(r => setTimeout(r, 100));
+        // Aguardar polyfill carregar completamente
+        let tentativas = 0;
+        while (typeof BarcodeDetector === 'undefined' && tentativas < 30) {
+          await new Promise(r => setTimeout(r, 100));
+          tentativas++;
+        }
 
         if (typeof BarcodeDetector !== 'undefined') {
           console.log('BarcodeDetector disponivel, preparando...');
 
+          // Verificar formatos suportados
+          let formatos = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'];
+
+          if (BarcodeDetector.getSupportedFormats) {
+            try {
+              const suportados = await BarcodeDetector.getSupportedFormats();
+              console.log('Formatos suportados:', suportados);
+              formatos = formatos.filter(f => suportados.includes(f));
+              if (formatos.length === 0) formatos = suportados.slice(0, 5);
+            } catch(e) {
+              console.warn('Erro ao verificar formatos:', e);
+            }
+          }
+
           // Pre-criar detector para acelerar primeira leitura
-          const formatos = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'];
-          const detector = new BarcodeDetector({ formats: formatos });
-          console.log('Detector pre-inicializado com sucesso');
+          detectorGlobal = new BarcodeDetector({ formats: formatos });
+          polyfillCarregado = true;
+          console.log('Detector pre-inicializado com formatos:', formatos);
         } else {
-          console.warn('BarcodeDetector nao disponivel apos polyfill');
+          console.error('BarcodeDetector NAO disponivel apos 3s!');
         }
       } catch (e) {
-        console.warn('Erro na pre-inicializacao:', e.message);
+        console.error('Erro na pre-inicializacao:', e.message);
       }
     })();
   </script>
@@ -995,17 +1017,30 @@
     // Inicializar BarcodeDetector com todos os formatos possiveis
     async function initBarcodeDetector() {
       try {
+        // Usar detector global se ja foi inicializado
+        if (detectorGlobal && polyfillCarregado) {
+          barcodeDetector = detectorGlobal;
+          console.log('Usando detector global pre-inicializado');
+          return true;
+        }
+
+        // Aguardar polyfill carregar
+        let tentativas = 0;
+        while (typeof BarcodeDetector === 'undefined' && tentativas < 50) {
+          await new Promise(r => setTimeout(r, 100));
+          tentativas++;
+        }
+
         // Verificar se polyfill carregou
         if (typeof BarcodeDetector === 'undefined') {
-          console.error('BarcodeDetector nao disponivel!');
+          console.error('BarcodeDetector nao disponivel apos espera!');
           return false;
         }
 
         // Formatos mais comuns de codigo de barras
         const formatosDesejados = [
           'ean_13', 'ean_8', 'upc_a', 'upc_e',
-          'code_128', 'code_39', 'code_93',
-          'codabar', 'itf', 'qr_code', 'data_matrix'
+          'code_128', 'code_39', 'qr_code'
         ];
 
         let formatosSuportados = formatosDesejados;
@@ -1026,7 +1061,7 @@
           formatosSuportados = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'];
         }
 
-        console.log('Usando formatos:', formatosSuportados);
+        console.log('Criando detector com formatos:', formatosSuportados);
 
         barcodeDetector = new BarcodeDetector({
           formats: formatosSuportados
@@ -1352,7 +1387,7 @@
           try {
             await scannerVideo.play();
             isScanning = true;
-            scanStatusText.textContent = "Camera pronta - aponte para o codigo";
+            scanStatusText.textContent = "Aponte para o codigo de barras";
             scanStatusBar.className = '';
             console.log('Video iniciado, resolucao:', scannerVideo.videoWidth, 'x', scannerVideo.videoHeight);
 
@@ -1399,15 +1434,29 @@
       }
 
       falhasConsecutivas = 0;
+      let ultimaDeteccao = 0;
 
-      // Intervalo mais rapido para melhor deteccao (15fps)
-      scanInterval = setInterval(async () => {
-        if (!isScanning || !barcodeDetector) return;
+      // Funcao de deteccao
+      async function detectarBarcode() {
+        if (!isScanning || !barcodeDetector) {
+          if (isScanning) requestAnimationFrame(detectarBarcode);
+          return;
+        }
 
         // Verificar se video esta pronto
         if (scannerVideo.readyState < 2 || scannerVideo.videoWidth === 0) {
+          requestAnimationFrame(detectarBarcode);
           return;
         }
+
+        const agora = Date.now();
+
+        // Limitar para ~20fps
+        if (agora - ultimaDeteccao < 50) {
+          requestAnimationFrame(detectarBarcode);
+          return;
+        }
+        ultimaDeteccao = agora;
 
         try {
           // Atualizar tamanho do canvas se necessario
@@ -1423,21 +1472,24 @@
           // Desenhar frame atual no canvas
           scanCtx.drawImage(scannerVideo, 0, 0, vw, vh);
 
-          // Tentar detectar barcode diretamente do video primeiro
+          // Tentar detectar barcode - multiplas tentativas
           let barcodes = [];
+
+          // Tentar primeiro com canvas (mais confiavel com polyfill)
           try {
-            barcodes = await barcodeDetector.detect(scannerVideo);
+            barcodes = await barcodeDetector.detect(scanCanvas);
           } catch (e1) {
-            // Se falhar com video, tentar com canvas
+            // Se falhar com canvas, tentar diretamente do video
             try {
-              barcodes = await barcodeDetector.detect(scanCanvas);
+              barcodes = await barcodeDetector.detect(scannerVideo);
             } catch (e2) {
-              // Tentar com ImageData (ultimo recurso)
+              // Tentar com ImageBitmap
               try {
-                const imageData = scanCtx.getImageData(0, 0, vw, vh);
-                barcodes = await barcodeDetector.detect(imageData);
+                const bitmap = await createImageBitmap(scanCanvas);
+                barcodes = await barcodeDetector.detect(bitmap);
+                bitmap.close();
               } catch (e3) {
-                // Ignorar
+                // Ignorar erros
               }
             }
           }
@@ -1450,11 +1502,13 @@
             const codigoLimpo = code.replace(/\D/g, '');
             if (codigoLimpo.length < 8 || codigoLimpo.length > 14) {
               console.log('Codigo invalido ignorado:', code);
+              requestAnimationFrame(detectarBarcode);
               return;
             }
 
-            // Evitar leituras duplicadas (800ms de debounce)
-            if (code === lastScannedCode && (now - lastScanTime) < 800) {
+            // Evitar leituras duplicadas (1000ms de debounce)
+            if (code === lastScannedCode && (now - lastScanTime) < 1000) {
+              requestAnimationFrame(detectarBarcode);
               return;
             }
 
@@ -1491,6 +1545,7 @@
                 fecharScanner();
                 buscar();
               }, 500);
+              return; // Nao continuar escaneando
             } else {
               // No modo continuo, fazer busca em background
               buscar();
@@ -1507,7 +1562,7 @@
             falhasConsecutivas++;
 
             // Mostrar feedback se estiver demorando
-            if (falhasConsecutivas > 50 && falhasConsecutivas % 30 === 0) {
+            if (falhasConsecutivas > 100 && falhasConsecutivas % 50 === 0) {
               scanStatusText.textContent = "Aproxime o codigo de barras...";
               scanStatusBar.className = 'reading';
             }
@@ -1515,7 +1570,15 @@
         } catch (e) {
           console.warn('Erro na deteccao:', e.message);
         }
-      }, 66); // ~15fps para melhor deteccao
+
+        // Continuar escaneando
+        if (isScanning) {
+          requestAnimationFrame(detectarBarcode);
+        }
+      }
+
+      // Iniciar loop de deteccao com requestAnimationFrame (mais suave)
+      requestAnimationFrame(detectarBarcode);
     }
 
     function playBeep() {
