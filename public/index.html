@@ -395,19 +395,6 @@
       display: flex;
     }
 
-    /* Forcar orientacao horizontal no scanner */
-    @media screen and (orientation: portrait) {
-      #scanner-container.active {
-        transform: rotate(90deg);
-        transform-origin: center center;
-        width: 100vh;
-        height: 100vw;
-        position: fixed;
-        top: calc((100vh - 100vw) / 2);
-        left: calc((100vw - 100vh) / 2);
-      }
-    }
-
     #scanner-video-wrapper {
       position: relative;
       width: 100%;
@@ -935,7 +922,7 @@
     <button id="close-modal">X Fechar</button>
   </div>
 
-  <script src="https://unpkg.com/@AugustasCole/barcode-detector-polyfill@1.1.0/dist/umd/bundle.min.js"></script>
+  <script src="https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es2018.min.js"></script>
   <script>
     const input = document.getElementById("codigo");
     const resultado = document.getElementById("resultado");
@@ -1156,43 +1143,62 @@
     };
 
     async function abrirScanner() {
-      try {
-        scannerContainer.classList.add('active');
-        scanStatusText.textContent = "Iniciando camera...";
-        scanStatusBar.className = '';
-        scanCount = 0;
-        scanCountSpan.textContent = '0';
+      scannerContainer.classList.add('active');
+      scanStatusText.textContent = "Iniciando camera...";
+      scanStatusBar.className = '';
+      scanCount = 0;
+      scanCountSpan.textContent = '0';
 
-        // Inicializar detector de codigo de barras
-        if (!barcodeDetector) {
+      // Inicializar detector de codigo de barras
+      if (!barcodeDetector) {
+        try {
           await initBarcodeDetector();
+        } catch (e) {
+          console.warn('Erro ao inicializar detector:', e);
         }
+      }
 
-        // Configuracoes da camera - preferir traseira com alta resolucao
-        const constraints = {
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            focusMode: { ideal: 'continuous' },
-            zoom: { ideal: 1.5 }
-          }
-        };
+      // Tentar abrir camera com diferentes configuracoes
+      let cameraAberta = false;
 
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const tentativas = [
+        { video: { facingMode: 'environment' } },
+        { video: { facingMode: { ideal: 'environment' } } },
+        { video: true }
+      ];
+
+      for (const constraints of tentativas) {
+        if (cameraAberta) break;
+        try {
+          console.log('Tentando:', JSON.stringify(constraints));
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+          cameraAberta = true;
+          console.log('Camera aberta com sucesso!');
+        } catch (e) {
+          console.warn('Falha com constraints:', constraints, e.message);
+        }
+      }
+
+      if (!cameraAberta || !mediaStream) {
+        alert('Nao foi possivel acessar a camera. Verifique as permissoes.');
+        fecharScanner();
+        return;
+      }
+
+      try {
         scannerVideo.srcObject = mediaStream;
 
-        // Aplicar configuracoes avancadas
-        const track = mediaStream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities();
-
-        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-          await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-        }
-
-        if (capabilities.zoom && capabilities.zoom.max > 1) {
-          const optimalZoom = Math.min(1.5, capabilities.zoom.max);
-          await track.applyConstraints({ advanced: [{ zoom: optimalZoom }] });
+        // Tentar aplicar foco continuo (opcional)
+        try {
+          const track = mediaStream.getVideoTracks()[0];
+          if (track && track.getCapabilities) {
+            const capabilities = track.getCapabilities();
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            }
+          }
+        } catch (e) {
+          console.warn('Foco continuo nao suportado:', e.message);
         }
 
         await scannerVideo.play();
@@ -1205,16 +1211,8 @@
         startScanning();
 
       } catch (err) {
-        console.error('Erro ao acessar camera:', err);
-
-        let mensagem = 'Nao foi possivel acessar a camera.';
-        if (err.name === 'NotAllowedError') {
-          mensagem = 'Permissao de camera negada.';
-        } else if (err.name === 'NotFoundError') {
-          mensagem = 'Nenhuma camera encontrada.';
-        }
-
-        alert(mensagem);
+        console.error('Erro ao iniciar video:', err);
+        alert('Erro ao iniciar camera: ' + err.message);
         fecharScanner();
       }
     }
