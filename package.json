@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build": "node build.js",
+    "migrate": "node migrate-to-sqlite.js",
     "setup-onedrive": "node setup-onedrive.js"
   },
   "dependencies": {
